@@ -3,9 +3,9 @@ date_default_timezone_set('UTC');
 
 // Параметры подключения к базе данных
 //$servername = "localhost";
-//$username = "s817757_power";
-//$password = "MPM6RTerpuDsKWZcCed4";
-//$dbname = "s817757_power";
+//$username = "s8******57_power";
+//$password = "MPM********ed4";
+//$dbname = "s8****857_power";
 
 // Подключение к базе данных
 //$mysqli = new mysqli($servername, $username, $password, $dbname);

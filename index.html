@@ -321,6 +321,7 @@
         $(document).ready(function() {
             // Устанавливаем значения по умолчанию для полей дат
             var today = new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0];
+			// сегодня +1
             var monthAgo = new Date();
             monthAgo.setMonth(monthAgo.getMonth() - 1);
             var monthAgoDate = monthAgo.toISOString().split('T')[0];
