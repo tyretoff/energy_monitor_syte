@@ -2,7 +2,6 @@
 date_default_timezone_set('UTC');
 ini_set('memory_limit', '512M');
 
-
 // Параметры подключения к базе данных
 //$servername = "localhost";
 //$username = "s******_power";
@@ -27,6 +26,7 @@ $mysqli = new mysqli($config['servername'], $config['username'], $config['passwo
 if ($mysqli->connect_error) {
     die("Connection failed: " . $mysqli->connect_error);
 }
+
 
 // SQL-запрос к таблице
 $query = "SELECT `datetime`, `voltage1`, `voltage2`, `voltage3`, `current1`, `current2`, `current3`, `P` FROM `t_power3`;";

@@ -36,24 +36,6 @@
             border-radius: 8px;
             margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-
-        #header h1 {
-            margin: 0;
-            font-size: 24px;
-        }
-
-        @media (max-width: 768px) {
-            #header h1 {
-                font-size: 20px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            #header h1 {
-                font-size: 18px;
-            }
         }
 
         #latestData {
@@ -72,23 +54,6 @@
             padding: 10px;
             background: #f8f9fa;
             border-radius: 6px;
-        }
-
-        .time-item {
-            grid-column: 1 / -1;
-            background: #e9ecef;
-            margin-bottom: 10px;
-        }
-
-        .time-item .data-label {
-            font-size: 14px;
-            color: #495057;
-            margin-bottom: 5px;
-        }
-
-        .time-item .data-value {
-            font-size: 16px;
-            color: #2c3e50;
         }
 
         .data-label {
@@ -111,7 +76,7 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        #exportCSV, #exportToCSV {
+        #exportCSV {
             margin-top: 20px;
             padding: 10px 25px;
             background: #3498db;
@@ -120,10 +85,9 @@
             border-radius: 5px;
             cursor: pointer;
             transition: background 0.3s;
-            margin-right: 10px;
         }
 
-        #exportCSV:hover, #exportToCSV:hover {
+        #exportCSV:hover {
             background: #2980b9;
         }
 
@@ -170,175 +134,17 @@
         .max-value {
             color: #27ae60;
         }
-
-        /* Оптимизация для мобильных устройств */
-        @media (max-width: 768px) {
-            body {
-                margin: 10px;
-            }
-            
-            #container2 {
-                padding: 10px;
-                height: 600px;
-            }
-            
-            /* Уменьшаем левый отступ на мобильных устройствах */
-            .highcharts-container svg {
-                overflow: visible !important;
-            }
-            
-            .highcharts-container .highcharts-root {
-                overflow: visible !important;
-            }
-            
-            /* Скрываем вертикальные оси в мобильной версии */
-            .highcharts-yaxis .highcharts-axis-line,
-            .highcharts-yaxis .highcharts-tick {
-                display: none;
-            }
-            
-            /* Настройки для графика на мобильных устройствах */
-            .highcharts-plot-band, .highcharts-plot-line, .highcharts-yaxis, .highcharts-grid {
-                transform: translateX(-10px);
-            }
-            
-            /* Настройки сетки для мобильных устройств */
-            .highcharts-grid-line {
-                stroke-opacity: 0.3;
-            }
-            
-            /* Настройки для меток осей */
-            .highcharts-yaxis-labels {
-                opacity: 0.8;
-            }
-            
-            .highcharts-axis-title {
-                font-size: 14px !important;
-                font-weight: bold !important;
-            }
-            
-            /* Оптимизация осей для мобильных устройств */
-            .highcharts-yaxis-labels text {
-                font-size: 10px !important;
-            }
-            
-            .highcharts-yaxis .highcharts-axis-line {
-                stroke-width: 1;
-            }
-            
-            .highcharts-legend-item text {
-                font-size: 11px !important;
-            }
-            
-            #latestData {
-                grid-template-columns: repeat(3, 1fr);
-                padding: 10px;
-                gap: 5px;
-            }
-            
-            .data-item {
-                padding: 5px;
-            }
-            
-            .data-value {
-                font-size: 14px;
-            }
-
-            .data-label {
-                font-size: 10px;
-            }
-
-            .time-item {
-                grid-column: 1 / -1;
-                margin-bottom: 5px;
-            }
-
-            .power-item {
-                grid-column: 1 / -1;
-                margin-top: 5px;
-            }
-        }
-        
-        /* Дополнительная оптимизация для очень маленьких экранов */
-        @media (max-width: 480px) {
-            body {
-                margin: 5px;
-            }
-            
-            #container2 {
-                padding: 5px;
-                height: 550px;
-            }
-            
-            /* Дополнительная оптимизация отступов для маленьких экранов */
-            .highcharts-plot-band, .highcharts-plot-line, .highcharts-yaxis, .highcharts-grid {
-                transform: translateX(-15px);
-            }
-            
-            /* Полностью скрываем вертикальные линии сетки */
-            .highcharts-grid-line {
-                stroke-opacity: 0.2;
-            }
-            
-            /* Уменьшаем количество меток на осях */
-            .highcharts-yaxis-labels text:nth-child(odd) {
-                opacity: 0.5;
-            }
-            
-            .highcharts-axis-title {
-                font-size: 12px !important;
-            }
-            
-            /* Оптимизация кнопок выбора диапазона */
-            .highcharts-range-selector-buttons {
-                transform: scale(0.95);
-                transform-origin: left top;
-            }
-            
-            #latestData {
-                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-                gap: 5px;
-                padding: 5px;
-            }
-            
-            .data-item {
-                padding: 5px;
-            }
-            
-            .data-value {
-                font-size: 14px;
-            }
-            
-            .data-label {
-                font-size: 10px;
-            }
-            
-            .stats-inline {
-                font-size: 9px;
-            }
-            
-            #header h1 {
-                font-size: 18px !important;
-            }
-            
-            #header p {
-                font-size: 12px !important;
-            }
-            
-            .highcharts-yaxis-labels text {
-                font-size: 9px !important;
-            }
-        }
     </style>
 </head>
 <body>
     <div id="header">
         <h1 style="margin: 0;">Мониторинг Меркурий236</h1>
+        <p style="margin: 5px 0 0; font-size: 14px; opacity: 0.9;">Последние показания контроллера</p>
     </div>
 
     <div id="latestData">
-        <div class="data-item time-item">
-            <div class="data-label">Последние показания контроллера</div>
+        <div class="data-item">
+            <div class="data-label">Время</div>
             <div class="data-value" id="latestTime">-</div>
         </div>
         <div class="data-item">
@@ -383,7 +189,7 @@
                 <span class="max-value" id="maxCurrent3">-</span>/<span class="min-value" id="minCurrent3">-</span>
             </div>
         </div>
-        <div class="data-item power-item">
+        <div class="data-item">
             <div class="data-label">Мощность P</div>
             <div class="data-value" id="latestPower">-</div>
             <div class="stats-inline">
@@ -393,10 +199,7 @@
     </div>
 
     <div id="container2"></div>
-    <center>
-        <button id="exportCSV">Экспорт данных в Excel</button>
-        <button id="exportToCSV">Экспорт данных в .CSV</button>
-    </center>
+    <center><button id="exportCSV">Экспорт данных в Excel</button></center>
 
     <script src="CD_/jquery-3.7.1.js"></script>
     <script src="CD_/highstock.js"></script>
@@ -516,69 +319,20 @@
                 P.push([data[i][0] * 1000, data[i][7]]);
             }
 
-            function updateLatestData(data) {
-                var latestIndex = data.length - 1;
-                document.getElementById('latestTime').textContent = 
-                    Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', data[latestIndex][0] * 1000);
-                document.getElementById('latestVoltage1').textContent = data[latestIndex][1].toFixed(1);
-                document.getElementById('latestVoltage2').textContent = data[latestIndex][2].toFixed(1);
-                document.getElementById('latestVoltage3').textContent = data[latestIndex][3].toFixed(1);
-                document.getElementById('latestCurrent1').textContent = data[latestIndex][4].toFixed(1);
-                document.getElementById('latestCurrent2').textContent = data[latestIndex][5].toFixed(1);
-                document.getElementById('latestCurrent3').textContent = data[latestIndex][6].toFixed(1);
-                document.getElementById('latestPower').textContent = data[latestIndex][7].toFixed(1);
-            }
-
-            // Обновляем последние данные при первой загрузке
-            updateLatestData(data);
-
-            // Функция для обновления всех данных
-            function updateAllData() {
-                $.getJSON('jsonp.php', function(newData) {
-                    if (!newData || newData.length === 0) {
-                        console.error('Нет новых данных для обновления');
-                        return;
-                    }
-
-                    // Обновляем последние показания
-                    updateLatestData(newData);
-
-                    // Обновляем графики
-                    chart.series[0].setData(newData.map(item => [item[0] * 1000, item[1]]));
-                    chart.series[1].setData(newData.map(item => [item[0] * 1000, item[2]]));
-                    chart.series[2].setData(newData.map(item => [item[0] * 1000, item[3]]));
-                    chart.series[3].setData(newData.map(item => [item[0] * 1000, item[4]]));
-                    chart.series[4].setData(newData.map(item => [item[0] * 1000, item[5]]));
-                    chart.series[5].setData(newData.map(item => [item[0] * 1000, item[6]]));
-                    chart.series[6].setData(newData.map(item => [item[0] * 1000, item[7]]));
-
-                    // Обновляем статистику
-                    var extremes = chart.xAxis[0].getExtremes();
-                    updateStats(newData, extremes.min, extremes.max);
-                }).fail(function() {
-                    console.error('Ошибка обновления данных');
-                });
-            }
-
-            // Устанавливаем интервал обновления каждые 30 секунд
-            setInterval(updateAllData, 30000);
+            var latestIndex = dataLength - 1;
+            document.getElementById('latestTime').textContent = 
+                Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', data[latestIndex][0] * 1000);
+            document.getElementById('latestVoltage1').textContent = data[latestIndex][1].toFixed(1);
+            document.getElementById('latestVoltage2').textContent = data[latestIndex][2].toFixed(1);
+            document.getElementById('latestVoltage3').textContent = data[latestIndex][3].toFixed(1);
+            document.getElementById('latestCurrent1').textContent = data[latestIndex][4].toFixed(1);
+            document.getElementById('latestCurrent2').textContent = data[latestIndex][5].toFixed(1);
+            document.getElementById('latestCurrent3').textContent = data[latestIndex][6].toFixed(1);
+            document.getElementById('latestPower').textContent = data[latestIndex][7].toFixed(1);
 
             var chart = Highcharts.stockChart('container2', {
-                chart: {
-                    spacingLeft: 10,
-                    spacingRight: 10,
-                    marginLeft: isMobileDevice() ? 25 : 50,
-                    marginRight: 15
-                },
-                
                 rangeSelector: {
                     selected: 1,
-                    inputEnabled: true,
-                    buttonTheme: {
-                        width: 32,
-                        height: 20,
-                        padding: 2
-                    },
                     buttons: [{
                         type: 'minute',
                         count: 10,
@@ -620,104 +374,30 @@
                     verticalAlign: 'bottom',
                     itemStyle: {
                         color: '#333',
-                        fontSize: '15.6px'
+                        fontSize: '12px'
                     },
                     itemHoverStyle: {
                         color: '#2980b9'
-                    },
-                    itemDistance: 10,
-                    symbolHeight: 10,
-                    symbolWidth: 10,
-                    symbolRadius: 5
+                    }
                 },
 
                 yAxis: [{
-                    title: { 
-                        text: 'U',
-                        align: 'middle',
-                        rotation: 0,
-                        offset: 0,
-                        y: -15,
-                        x: -35
-                    },
+                    title: { text: 'Напряжение (В)' },
                     height: '40%',
-                    resize: { enabled: true },
-                    labels: {
-                        align: 'right',
-                        x: -8,
-                        y: 3,
-                        style: {
-                            color: '#666'
-                        }
-                    },
-                    offset: 0,
-                    maxPadding: 0.05,
-                    lineWidth: isMobileDevice() ? 0 : 1,
-                    gridLineWidth: isMobileDevice() ? 0.5 : 1,
-                    gridLineColor: '#e6e6e6',
-                    minorGridLineColor: '#f2f2f2',
-                    minorTickLength: 0
+                    resize: { enabled: true }
                 }, {
-                    title: { 
-                        text: 'I',
-                        align: 'middle',
-                        rotation: 0,
-                        offset: 0,
-                        y: -15,
-                        x: -35
-                    },
+                    title: { text: 'Ток (А)' },
                     top: '42%',
-                    height: '40%',
-                    labels: {
-                        align: 'right',
-                        x: -8,
-                        y: 3,
-                        style: {
-                            color: '#666'
-                        }
-                    },
-                    offset: 0,
-                    maxPadding: 0.05,
-                    lineWidth: isMobileDevice() ? 0 : 1,
-                    gridLineWidth: isMobileDevice() ? 0.5 : 1,
-                    gridLineColor: '#e6e6e6',
-                    minorGridLineColor: '#f2f2f2',
-                    minorTickLength: 0
+                    height: '40%'
                 }, {
-                    title: { 
-                        text: 'P',
-                        align: 'middle',
-                        rotation: 0,
-                        offset: 0,
-                        y: -15,
-                        x: -35
-                    },
+                    title: { text: 'Мощность (Вт)' },
                     top: '85%',
-                    height: '15%',
-                    labels: {
-                        align: 'right',
-                        x: -8,
-                        y: 3,
-                        style: {
-                            color: '#666'
-                        }
-                    },
-                    offset: 0,
-                    maxPadding: 0.05,
-                    lineWidth: isMobileDevice() ? 0 : 1,
-                    gridLineWidth: isMobileDevice() ? 0.5 : 1,
-                    gridLineColor: '#e6e6e6',
-                    minorGridLineColor: '#f2f2f2',
-                    minorTickLength: 0
+                    height: '15%'
                 }],
 
                 tooltip: {
                     split: true,
-                    valueDecimals: 1,
-                    style: {
-                        fontSize: '12px'
-                    },
-                    headerFormat: '<span style="font-size: 12px">{point.key}</span><br/>'
+                    valueDecimals: 1
                 },
 
                 plotOptions: {
@@ -832,7 +512,7 @@
                 xml += '   <NumberFormat ss:Format="dd.mm.yyyy hh:mm:ss"/>\n';
                 xml += '  </Style>\n';
                 xml += '  <Style ss:ID="Number">\n';
-                xml += '   <NumberFormat ss:Format="0"/>\n';
+                xml += '   <NumberFormat ss:Format="0.0"/>\n';
                 xml += '  </Style>\n';
                 xml += ' </Styles>\n';
                 
@@ -847,7 +527,7 @@
                 
                 // Заголовки
                 xml += '   <Row>\n';
-                var headers = ['Date', 'I1', 'I2', 'I3', 'U1', 'U2', 'U3', 'P'];
+                var headers = ['Дата', 'U1', 'U2', 'U3', 'I1', 'I2', 'I3', 'Мощность'];
                 headers.forEach(function(header) {
                     xml += '    <Cell ss:StyleID="Header"><Data ss:Type="String">' + header + '</Data></Cell>\n';
                 });
@@ -861,16 +541,11 @@
                         xml += '    <Cell ss:StyleID="DateTime"><Data ss:Type="DateTime">' + 
                                Highcharts.dateFormat('%Y-%m-%dT%H:%M:%S.000', row[0] * 1000) + 
                                '</Data></Cell>\n';
-                        // Токи
-                        xml += '    <Cell ss:StyleID="Number"><Data ss:Type="Number">' + Math.round(row[4]) + '</Data></Cell>\n'; // I1
-                        xml += '    <Cell ss:StyleID="Number"><Data ss:Type="Number">' + Math.round(row[5]) + '</Data></Cell>\n'; // I2
-                        xml += '    <Cell ss:StyleID="Number"><Data ss:Type="Number">' + Math.round(row[6]) + '</Data></Cell>\n'; // I3
-                        // Напряжения
-                        xml += '    <Cell ss:StyleID="Number"><Data ss:Type="Number">' + Math.round(row[1]) + '</Data></Cell>\n'; // U1
-                        xml += '    <Cell ss:StyleID="Number"><Data ss:Type="Number">' + Math.round(row[2]) + '</Data></Cell>\n'; // U2
-                        xml += '    <Cell ss:StyleID="Number"><Data ss:Type="Number">' + Math.round(row[3]) + '</Data></Cell>\n'; // U3
-                        // Мощность
-                        xml += '    <Cell ss:StyleID="Number"><Data ss:Type="Number">' + Math.round(row[7]) + '</Data></Cell>\n'; // P
+                        // Значения
+                        for(var i = 1; i < row.length; i++) {
+                            xml += '    <Cell ss:StyleID="Number"><Data ss:Type="Number">' + 
+                                   row[i].toFixed(1) + '</Data></Cell>\n';
+                        }
                         xml += '   </Row>\n';
                     }
                 });
@@ -915,68 +590,6 @@
                 setTimeout(function() {
                     URL.revokeObjectURL(link.href);
                 }, 100);
-            });
-
-            // Обработчик для экспорта в CSV
-            $('#exportToCSV').click(function () {
-                var extremes = chart.xAxis[0].getExtremes();
-                // Не используем кириллицу в заголовках
-                var csvContent = "Date;I1;I2;I3;U1;U2;U3;P\n";
-                
-                data.forEach(function(row) {
-                    if (row[0] * 1000 >= extremes.min && row[0] * 1000 <= extremes.max) {
-                        // Преобразуем timestamp в дату
-                        var date = Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', row[0] * 1000);
-                        // Добавляем строку данных в CSV в формате: I1;I2;I3;U1;U2;U3;P
-                        csvContent += date + ";" + 
-                            Math.round(row[4]) + ";" +  // I1
-                            Math.round(row[5]) + ";" +  // I2
-                            Math.round(row[6]) + ";" +  // I3
-                            Math.round(row[1]) + ";" +  // U1
-                            Math.round(row[2]) + ";" +  // U2
-                            Math.round(row[3]) + ";" +  // U3
-                            Math.round(row[7]) + "\n";  // P
-                    }
-                });
-                
-                // Создаем Blob с данными CSV с BOM для корректной кодировки
-                var blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-                var link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = 'monitoring_' + Highcharts.dateFormat('%Y%m%d_%H%M%S', Date.now()) + '.csv';
-                link.click();
-                
-                // Очищаем URL
-                setTimeout(function() {
-                    URL.revokeObjectURL(link.href);
-                }, 100);
-            });
-
-            // Функция для определения мобильного устройства
-            function isMobileDevice() {
-                return window.innerWidth <= 768;
-            }
-
-            // Обработка изменения размера окна
-            window.addEventListener('resize', function() {
-                if (chart) {
-                    var isMobile = isMobileDevice();
-                    chart.update({
-                        chart: {
-                            marginLeft: isMobile ? 25 : 50
-                        },
-                        yAxis: [{
-                            lineWidth: isMobile ? 0 : 1,
-                            gridLineWidth: isMobile ? 0.5 : 1
-                        }, {
-                            lineWidth: isMobile ? 0 : 1,
-                            gridLineWidth: isMobile ? 0.5 : 1
-                        }, {
-                            lineWidth: isMobile ? 0 : 1,
-                            gridLineWidth: isMobile ? 0.5 : 1
-                        }]
-                    });
-                }
             });
         }).fail(function() {
             console.error('Ошибка загрузки данных');

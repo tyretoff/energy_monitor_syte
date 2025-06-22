@@ -1,0 +1,292 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MercuryDataLogger</title>
+    <style>
+        .highcharts-container {
+            overflow: hidden;
+            position: relative;
+            background-color: #f9f9f9;
+        }
+
+        #container2 {
+            margin-top: 20px;
+            overflow: hidden;
+            height: 800px;
+            min-width: 310px;
+        }
+
+        #latestData {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-bottom: 1px solid #ddd;
+        }
+
+        #latestValues p {
+            margin: 0 15px;
+            font-size: 16px;
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="latestData">
+        <div id="latestValues">
+            <p id="latestTime">Время: </p>
+            <p id="latestVoltage1">U1: </p>
+            <p id="latestVoltage2">U2: </p>
+            <p id="latestVoltage3">U3: </p>
+            <p id="latestCurrent1">I1: </p>
+            <p id="latestCurrent2">I2: </p>
+            <p id="latestCurrent3">I3: </p>
+            <p id="latestPower">P: </p>
+        </div>
+    </div>
+
+    <div>
+        <label for="startDate">С: </label>
+        <input type="date" id="startDate">
+        <label for="endDate">По: </label>
+        <input type="date" id="endDate">
+        <button id="loadData">Загрузить данные</button>
+    </div>
+
+    <div id="container2"></div>
+    <button id="exportCSV">Экспорт в CSV</button>
+
+    <script src="CD_/jquery-3.7.1.js"></script>
+    <script src="CD_/highstock.js"></script>
+    <script src="CD_/boost.js"></script>
+    <script src="CD_/grid-light.js"></script>
+    <script src="CD_/exporting.js"></script>
+    <script>
+        function loadData() {
+            var startDate = $('#startDate').val();
+            var endDate = $('#endDate').val();
+
+            if (!startDate || !endDate) {
+                alert("Пожалуйста, выберите даты.");
+                return;
+            }
+
+            $.getJSON(`jsonp_.php?start=${startDate}&end=${endDate}`, data => {
+                var voltage1 = [], voltage2 = [], voltage3 = [];
+                var current1 = [], current2 = [], current3 = [];
+                var P = [];
+                var dataLength = data.length;
+
+                // Интервал проверки разрыва (в миллисекундах, здесь 1 минута)
+                var interval = 60 * 1000;
+
+                for (var i = 0; i < dataLength; i++) {
+                    var timestamp = data[i][0] * 1000;
+
+                    // Проверяем, есть ли разрыв между текущей и предыдущей меткой времени
+                    if (i > 0) {
+                        var previousTimestamp = data[i - 1][0] * 1000;
+                        if (timestamp - previousTimestamp > interval) {
+                            // Вставляем нулевые значения для пропущенного интервала
+                            voltage1.push([previousTimestamp + interval, 0]);
+                            voltage2.push([previousTimestamp + interval, 0]);
+                            voltage3.push([previousTimestamp + interval, 0]);
+                            current1.push([previousTimestamp + interval, 0]);
+                            current2.push([previousTimestamp + interval, 0]);
+                            current3.push([previousTimestamp + interval, 0]);
+                            P.push([previousTimestamp + interval, 0]);
+                        }
+                    }
+
+                    // Добавляем текущие данные
+                    voltage1.push([timestamp, data[i][1]]);
+                    voltage2.push([timestamp, data[i][2]]);
+                    voltage3.push([timestamp, data[i][3]]);
+                    current1.push([timestamp, data[i][4]]);
+                    current2.push([timestamp, data[i][5]]);
+                    current3.push([timestamp, data[i][6]]);
+                    P.push([timestamp, data[i][7]]);
+                }
+
+                // Обновление последнего отображаемого значения
+                var latestIndex = dataLength - 1;
+                var latestTime = Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', data[latestIndex][0] * 1000);
+                var latestVoltage1 = data[latestIndex][1];
+                var latestVoltage2 = data[latestIndex][2];
+                var latestVoltage3 = data[latestIndex][3];
+                var latestCurrent1 = data[latestIndex][4];
+                var latestCurrent2 = data[latestIndex][5];
+                var latestCurrent3 = data[latestIndex][6];
+                var latestPower = data[latestIndex][7];
+
+                document.getElementById('latestTime').innerHTML = 'Время: ' + latestTime;
+                document.getElementById('latestVoltage1').innerHTML = 'U1: ' + latestVoltage1;
+                document.getElementById('latestVoltage2').innerHTML = 'U2: ' + latestVoltage2;
+                document.getElementById('latestVoltage3').innerHTML = 'U3: ' + latestVoltage3;
+                document.getElementById('latestCurrent1').innerHTML = 'I1: ' + latestCurrent1;
+                document.getElementById('latestCurrent2').innerHTML = 'I2: ' + latestCurrent2;
+                document.getElementById('latestCurrent3').innerHTML = 'I3: ' + latestCurrent3;
+                document.getElementById('latestPower').innerHTML = 'P: ' + latestPower;
+
+                // Создание графика
+                var chart = Highcharts.stockChart('container2', {
+                    rangeSelector: {
+                        selected: 1,
+                        buttons: [{
+                            type: 'minute',
+                            count: 10,
+                            text: '10м'
+                        }, {
+                            type: 'hour',
+                            count: 1,
+                            text: '1час'
+                        }, {
+                            type: 'hour',
+                            count: 6,
+                            text: '6час'
+                        }, {
+                            type: 'day',
+                            count: 1,
+                            text: '1дн'
+                        }, {
+                            type: 'week',
+                            count: 1,
+                            text: 'неделя'
+                        }, {
+                            type: 'month',
+                            count: 1,
+                            text: 'мес'
+                        }, {
+                            type: 'year',
+                            count: 1,
+                            text: 'год'
+                        }, {
+                            type: 'all',
+                            text: 'Всё'
+                        }]
+                    },
+
+                    title: {
+                        text: 'Электросеть'
+                    },
+
+                    yAxis: [{
+                        labels: {
+                            align: 'right',
+                            x: -3
+                        },
+                        title: {
+                            text: 'Напряжение'
+                        },
+                        height: '40%',
+                        lineWidth: 1,
+                        resize: {
+                            enabled: true
+                        }
+                    }, {
+                        labels: {
+                            align: 'right',
+                            x: -3
+                        },
+                        title: {
+                            text: 'Ток'
+                        },
+                        top: '42%',
+                        height: '40%',
+                        offset: 0,
+                        lineWidth: 1
+                    }, {
+                        labels: {
+                            align: 'right',
+                            x: -3
+                        },
+                        title: {
+                            text: 'Мощность'
+                        },
+                        top: '85%',
+                        height: '15%',
+                        offset: 0,
+                        lineWidth: 1
+                    }],
+
+                    tooltip: {
+                        split: true
+                    },
+
+                    series: [{
+                        type: 'spline',
+                        name: 'U1',
+                        data: voltage1,
+                        yAxis: 0
+                    }, {
+                        type: 'spline',
+                        name: 'U2',
+                        data: voltage2,
+                        yAxis: 0
+                    }, {
+                        type: 'spline',
+                        name: 'U3',
+                        data: voltage3,
+                        yAxis: 0
+                    }, {
+                        type: 'spline',
+                        name: 'I1',
+                        data: current1,
+                        yAxis: 1
+                    }, {
+                        type: 'spline',
+                        name: 'I2',
+                        data: current2,
+                        yAxis: 1
+                    }, {
+                        type: 'spline',
+                        name: 'I3',
+                        data: current3,
+                        yAxis: 1
+                    }, {
+                        type: 'spline',
+                        name: 'P',
+                        data: P,
+                        yAxis: 2
+                    }]
+                });
+            });
+        }
+
+        $(document).ready(function () {
+            var today = new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0];
+            var monthAgo = new Date();
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            var monthAgoDate = monthAgo.toISOString().split('T')[0];
+
+            $('#startDate').val(monthAgoDate);
+            $('#endDate').val(today);
+
+            loadData();
+
+            $('#loadData').click(loadData);
+        });
+
+        document.getElementById('exportCSV').addEventListener('click', () => {
+            var csv = 'Время,U1,U2,U3,I1,I2,I3,P\n';
+            $.getJSON(`jsonp_.php?start=${$('#startDate').val()}&end=${$('#endDate').val()}`, data => {
+                data.forEach(row => {
+                    var formattedTime = Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', row[0] * 1000);
+                    csv += '"' + formattedTime + '",' + row.slice(1).join(',') + '\n';
+                });
+                var hiddenElement = document.createElement('a');
+                hiddenElement.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);
+                hiddenElement.target = '_blank';
+                hiddenElement.download = 'data.csv';
+                hiddenElement.click();
+            });
+        });
+    </script>
+</body>
+
+</html>
