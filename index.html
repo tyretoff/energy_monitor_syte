@@ -22,6 +22,7 @@
             });
         }
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body {
             margin: 20px;
@@ -936,118 +937,52 @@
             chart.allRawData = data; // Сохраняем исходные данные
             updateStats(data, initialExtremes.min, initialExtremes.max);
 
+            // Обработчик для экспорта в Excel
             $('#exportCSV').click(function () {
                 var extremes = chart.xAxis[0].getExtremes();
                 
-                // Создаем XML для Excel
-                var xml = '<?xml version="1.0"?>\n';
-                xml += '<?mso-application progid="Excel.Sheet"?>\n';
-                xml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"\n';
-                xml += ' xmlns:o="urn:schemas-microsoft-com:office:office"\n';
-                xml += ' xmlns:x="urn:schemas-microsoft-com:office:excel"\n';
-                xml += ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n';
-                
-                // Добавляем стили
-                xml += ' <Styles>\n';
-                xml += '  <Style ss:ID="Default" ss:Name="Normal">\n';
-                xml += '   <Alignment ss:Vertical="Bottom"/>\n';
-                xml += '   <Borders/>\n';
-                xml += '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>\n';
-                xml += '   <Interior/>\n';
-                xml += '   <NumberFormat/>\n';
-                xml += '   <Protection/>\n';
-                xml += '  </Style>\n';
-                xml += '  <Style ss:ID="Header">\n';
-                xml += '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000" ss:Bold="1"/>\n';
-                xml += '   <Interior ss:Color="#E0E0E0" ss:Pattern="Solid"/>\n';
-                xml += '  </Style>\n';
-                xml += '  <Style ss:ID="DateTime">\n';
-                xml += '   <NumberFormat ss:Format="dd.mm.yyyy hh:mm:ss"/>\n';
-                xml += '  </Style>\n';
-                xml += '  <Style ss:ID="Number">\n';
-                xml += '   <NumberFormat ss:Format="0"/>\n';
-                xml += '  </Style>\n';
-                xml += ' </Styles>\n';
-                
-                // Начало листа
-                xml += ' <Worksheet ss:Name="Данные">\n';
-                xml += '  <Table ss:ExpandedColumnCount="8" ss:ExpandedRowCount="' + 
-                       (chart.allRawData.length + 1) + '" x:FullColumns="1" x:FullRows="1">\n';
-                
-                // Задаем ширину столбцов
-                xml += '   <Column ss:Width="120"/>\n';
-                xml += '   <Column ss:Width="80" ss:Span="6"/>\n';
-                
-                // Заголовки
-                xml += '   <Row>\n';
+                // Данные для экспорта
                 var headers = ['Date', 'I1', 'I2', 'I3', 'U1', 'U2', 'U3', 'P'];
-                headers.forEach(function(header) {
-                    xml += '    <Cell ss:StyleID="Header"><Data ss:Type="String">' + header + '</Data></Cell>\n';
-                });
-                xml += '   </Row>\n';
-                
-                // Данные
+                var data = [headers];
+
                 chart.allRawData.forEach(function(row) {
                     if (row[0] * 1000 >= extremes.min && row[0] * 1000 <= extremes.max) {
-                        xml += '   <Row>\n';
-                        // Дата
-                        xml += '    <Cell ss:StyleID="DateTime"><Data ss:Type="DateTime">' + 
-                               Highcharts.dateFormat('%Y-%m-%dT%H:%M:%S.000', row[0] * 1000) + 
-                               '</Data></Cell>\n';
-                        // Токи
-                        xml += '    <Cell ss:StyleID="Number"><Data ss:Type="Number">' + Math.round(row[4]) + '</Data></Cell>\n'; // I1
-                        xml += '    <Cell ss:StyleID="Number"><Data ss:Type="Number">' + Math.round(row[5]) + '</Data></Cell>\n'; // I2
-                        xml += '    <Cell ss:StyleID="Number"><Data ss:Type="Number">' + Math.round(row[6]) + '</Data></Cell>\n'; // I3
-                        // Напряжения
-                        xml += '    <Cell ss:StyleID="Number"><Data ss:Type="Number">' + Math.round(row[1]) + '</Data></Cell>\n'; // U1
-                        xml += '    <Cell ss:StyleID="Number"><Data ss:Type="Number">' + Math.round(row[2]) + '</Data></Cell>\n'; // U2
-                        xml += '    <Cell ss:StyleID="Number"><Data ss:Type="Number">' + Math.round(row[3]) + '</Data></Cell>\n'; // U3
-                        // Мощность
-                        xml += '    <Cell ss:StyleID="Number"><Data ss:Type="Number">' + Math.round(row[7]) + '</Data></Cell>\n'; // P
-                        xml += '   </Row>\n';
+                        var date = new Date(row[0] * 1000);
+                        data.push([
+                            date,
+                            Math.round(row[4]), // I1
+                            Math.round(row[5]), // I2
+                            Math.round(row[6]), // I3
+                            Math.round(row[1]), // U1
+                            Math.round(row[2]), // U2
+                            Math.round(row[3]), // U3
+                            Math.round(row[7])  // P
+                        ]);
                     }
                 });
+
+                // Создание листа
+                var ws = XLSX.utils.aoa_to_sheet(data);
+
+                // Установка ширины столбцов (в символах)
+                ws['!cols'] = [
+                    { wch: 20 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, 
+                    { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 }
+                ];
                 
-                xml += '  </Table>\n';
-                xml += '  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">\n';
-                xml += '   <PageSetup>\n';
-                xml += '    <Layout x:Orientation="Landscape"/>\n';
-                xml += '    <Header x:Margin="0.3"/>\n';
-                xml += '    <Footer x:Margin="0.3"/>\n';
-                xml += '    <PageMargins x:Bottom="0.75" x:Left="0.7" x:Right="0.7" x:Top="0.75"/>\n';
-                xml += '   </PageSetup>\n';
-                xml += '   <Selected/>\n';
-                xml += '   <FreezePanes/>\n';
-                xml += '   <FrozenNoSplit/>\n';
-                xml += '   <SplitHorizontal>1</SplitHorizontal>\n';
-                xml += '   <TopRowBottomPane>1</TopRowBottomPane>\n';
-                xml += '   <ActivePane>2</ActivePane>\n';
-                xml += '   <Panes>\n';
-                xml += '    <Pane>\n';
-                xml += '     <Number>3</Number>\n';
-                xml += '    </Pane>\n';
-                xml += '    <Pane>\n';
-                xml += '     <Number>2</Number>\n';
-                xml += '     <ActiveRow>0</ActiveRow>\n';
-                xml += '    </Pane>\n';
-                xml += '   </Panes>\n';
-                xml += '   <ProtectObjects>False</ProtectObjects>\n';
-                xml += '   <ProtectScenarios>False</ProtectScenarios>\n';
-                xml += '  </WorksheetOptions>\n';
-                xml += ' </Worksheet>\n';
-                xml += '</Workbook>';
-                
-                // Создаем Blob с XML данными
-                var blob = new Blob(['\ufeff' + xml], { type: 'application/vnd.ms-excel' });
-                var link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = 'monitoring_' + Highcharts.dateFormat('%Y%m%d', extremes.min) + '-' + Highcharts.dateFormat('%Y%m%d', extremes.max) + '.xls';
-                link.click();
-                
-                // Очищаем URL
-                setTimeout(function() {
-                    URL.revokeObjectURL(link.href);
-                }, 100);
+                // Применение формата даты ко всему столбцу A, начиная со второй строки
+                for (var i = 1; i < data.length; i++) {
+                    var cellRef = XLSX.utils.encode_cell({c: 0, r: i}); // A2, A3, ...
+                    if(ws[cellRef]) ws[cellRef].z = 'dd.mm.yyyy hh:mm:ss';
+                }
+
+                // Создание книги
+                var wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Данные');
+
+                // Генерация файла
+                var filename = 'monitoring_' + Highcharts.dateFormat('%Y%m%d', extremes.min) + '-' + Highcharts.dateFormat('%Y%m%d', extremes.max) + '.xlsx';
+                XLSX.writeFile(wb, filename);
             });
 
             // Обработчик для экспорта в CSV
