@@ -560,9 +560,18 @@
                 });
             }
 
-            // Устанавливаем интервал обновления каждые 120
-            //  секунд
-            setInterval(updateAllData, 120000);
+            var updateIntervalId;
+
+            function resetUpdateTimer() {
+                if (updateIntervalId) {
+                    clearInterval(updateIntervalId);
+                }
+                updateIntervalId = setInterval(updateAllData, 120000);
+                console.log('Таймер автообновления сброшен. Следующее обновление через 120 секунд.');
+            }
+
+            // Запускаем таймер автообновления
+            resetUpdateTimer();
 
             // --- Вспомогательные функции для загрузки данных в диаграмму ---
             function updateChartWithData(chart, newData, startMillis, endMillis) {
@@ -621,7 +630,12 @@
                     spacingLeft: 10,
                     spacingRight: 10,
                     marginLeft: isMobileDevice() ? 25 : 50,
-                    marginRight: 15
+                    marginRight: 15,
+                    events: {
+                        redraw: function() {
+                            resetUpdateTimer();
+                        }
+                    }
                 },
                 
                             xAxis: {
@@ -637,6 +651,7 @@
             rangeSelector: {
                     selected: 1,
                     inputEnabled: true,
+                    allButtonsEnabled: true,
                     buttonTheme: {
                         width: 32,
                         height: 20,
