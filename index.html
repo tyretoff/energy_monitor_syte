@@ -1076,7 +1076,7 @@
                 var blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
                 var link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = 'monitoring_' + Highcharts.dateFormat('%Y%m%d_%H%M%S', Date.now()) + '.csv';
+                link.download = 'monitoring_' + Highcharts.dateFormat('%Y%m%d', extremes.min) + '-' + Highcharts.dateFormat('%Y%m%d', extremes.max) + '.csv';
                 link.click();
                 
                 // Очищаем URL
