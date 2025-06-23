@@ -1041,7 +1041,7 @@
                 var blob = new Blob(['\ufeff' + xml], { type: 'application/vnd.ms-excel' });
                 var link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = 'monitoring_' + Highcharts.dateFormat('%Y%m%d_%H%M%S', Date.now()) + '.xls';
+                link.download = 'monitoring_' + Highcharts.dateFormat('%Y%m%d', extremes.min) + '-' + Highcharts.dateFormat('%Y%m%d', extremes.max) + '.xls';
                 link.click();
                 
                 // Очищаем URL
