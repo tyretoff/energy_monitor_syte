@@ -28,13 +28,34 @@ if ($mysqli->connect_error) {
 }
 
 
-// SQL-запрос к таблице
-$query = "SELECT `datetime`, `voltage1`, `voltage2`, `voltage3`, `current1`, `current2`, `current3`, `P` FROM `t_power3`;";
-$result = $mysqli->query($query);
+// Получение диапазона дат из параметров запроса
+$start = isset($_GET['start']) ? intval($_GET['start']) : null;
+$end = isset($_GET['end']) ? intval($_GET['end']) : null;
+
+$range = isset($_GET['range']) ? $_GET['range'] : null;
+
+if ($range === 'all') {
+    // Загружаем все данные
+    $stmt = $mysqli->prepare("SELECT `datetime`, `voltage1`, `voltage2`, `voltage3`, `current1`, `current2`, `current3`, `P` FROM `t_power3` ORDER BY `datetime` ASC");
+} elseif ($start && $end) {
+    // Преобразование Unix timestamp в MySQL datetime формат
+    $startDate = date('Y-m-d H:i:s', $start);
+    $endDate = date('Y-m-d H:i:s', $end);
+    $stmt = $mysqli->prepare("SELECT `datetime`, `voltage1`, `voltage2`, `voltage3`, `current1`, `current2`, `current3`, `P` FROM `t_power3` WHERE `datetime` BETWEEN ? AND ? ORDER BY `datetime` ASC");
+    $stmt->bind_param("ss", $startDate, $endDate);
+} else {
+    // По умолчанию - данные за последний месяц
+    $startDate = date('Y-m-d H:i:s', strtotime('-1 month'));
+    $stmt = $mysqli->prepare("SELECT `datetime`, `voltage1`, `voltage2`, `voltage3`, `current1`, `current2`, `current3`, `P` FROM `t_power3` WHERE `datetime` >= ? ORDER BY `datetime` ASC");
+    $stmt->bind_param("s", $startDate);
+}
+
+$stmt->execute();
+$result = $stmt->get_result();
 
 
 
-
+$all = [];
 while ($record = $result->fetch_row()){
     $all[] =  array(strtotime($record[0]), (float)$record[1], (float)$record[2], (float)$record[3], (float)$record[4], (float)$record[5], (float)$record[6], (float)$record[7]);
 }

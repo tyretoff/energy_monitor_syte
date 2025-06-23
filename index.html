@@ -560,8 +560,61 @@
                 });
             }
 
-            // Устанавливаем интервал обновления каждые 30 секунд
-            setInterval(updateAllData, 30000);
+            // Устанавливаем интервал обновления каждые 120
+            //  секунд
+            setInterval(updateAllData, 120000);
+
+            // --- Вспомогательные функции для загрузки данных в диаграмму ---
+            function updateChartWithData(chart, newData, startMillis, endMillis) {
+                if (!newData || newData.length === 0) {
+                    console.error('Нет данных для отображения');
+                    alert('Ошибка: Нет данных для отображения');
+                    chart.hideLoading();
+                    return;
+                }
+                
+                console.log('Загружено ' + newData.length + ' точек данных.');
+                chart.allRawData = newData; // Сохраняем все данные
+
+                var voltage1 = [], voltage2 = [], voltage3 = [],
+                    current1 = [], current2 = [], current3 = [],
+                    power = [];
+
+                newData.forEach(function (point) {
+                    var t = point[0] * 1000;
+                    voltage1.push([t, point[1]]);
+                    voltage2.push([t, point[2]]);
+                    voltage3.push([t, point[3]]);
+                    current1.push([t, point[4]]);
+                    current2.push([t, point[5]]);
+                    current3.push([t, point[6]]);
+                    power.push([t, point[7]]);
+                });
+
+                chart.series[0].setData(voltage1, false);
+                chart.series[1].setData(voltage2, false);
+                chart.series[2].setData(voltage3, false);
+                chart.series[3].setData(current1, false);
+                chart.series[4].setData(current2, false);
+                chart.series[5].setData(current3, false);
+                chart.series[6].setData(power, false); // Отключаем перерисовку для всех серий
+
+                // Устанавливаем правильный масштаб и принудительно перерисовываем диаграмму
+                // Для кнопки 'Все' startMillis и endMillis будут undefined, и setExtremes сбросит масштаб
+                chart.xAxis[0].setExtremes(startMillis, endMillis, true);
+
+                chart.hideLoading();
+            }
+
+            function handleChartAjaxError(chart, jqXHR, textStatus, errorThrown) {
+                console.error('Ошибка загрузки данных. Статус: ' + textStatus + ', Ошибка: ' + errorThrown);
+                if (jqXHR.responseText) {
+                    console.error('Ответ сервера:', jqXHR.responseText);
+                }
+                alert('Ошибка подключения к серверу данных. Проверьте консоль разработчика (F12) для деталей.');
+                chart.hideLoading();
+            }
+            // --- Конец вспомогательных функций ---
 
             var chart = Highcharts.stockChart('container2', {
                 chart: {
@@ -571,7 +624,17 @@
                     marginRight: 15
                 },
                 
-                rangeSelector: {
+                            xAxis: {
+                events: {
+                    setExtremes: function (e) {
+                        // Обновляем статистику при любом изменении масштаба
+                        if (this.chart.allRawData) {
+                            updateStats(this.chart.allRawData, e.min, e.max);
+                        }
+                    }
+                }
+            },
+            rangeSelector: {
                     selected: 1,
                     inputEnabled: true,
                     buttonTheme: {
@@ -598,18 +661,72 @@
                     }, {
                         type: 'week',
                         count: 1,
-                        text: 'нед'
+                        text: 'нед',
+                        events: {
+                            click: function() {
+                                var chart = $('#container2').highcharts();
+                                chart.showLoading('Загрузка данных за неделю...');
+                                var now = new Date();
+                                var endTimestamp = Math.floor(now.getTime() / 1000);
+                                var start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                                var startTimestamp = Math.floor(start.getTime() / 1000);
+                                $.getJSON(`jsonp.php?start=${startTimestamp}&end=${endTimestamp}`)
+                                    .done(function(newData) { updateChartWithData(chart, newData, startTimestamp * 1000, endTimestamp * 1000); })
+                                    .fail(function(jqXHR, textStatus, errorThrown) { handleChartAjaxError(chart, jqXHR, textStatus, errorThrown); });
+                                return false;
+                            }
+                        }
                     }, {
                         type: 'month',
                         count: 1,
-                        text: 'мес'
+                        text: 'мес',
+                        events: {
+                            click: function() {
+                                var chart = $('#container2').highcharts();
+                                chart.showLoading('Загрузка данных за месяц...');
+                                var now = new Date();
+                                var endTimestamp = Math.floor(now.getTime() / 1000);
+                                var start = new Date();
+                                start.setMonth(start.getMonth() - 1);
+                                var startTimestamp = Math.floor(start.getTime() / 1000);
+                                $.getJSON(`jsonp.php?start=${startTimestamp}&end=${endTimestamp}`)
+                                    .done(function(newData) { updateChartWithData(chart, newData, startTimestamp * 1000, endTimestamp * 1000); })
+                                    .fail(function(jqXHR, textStatus, errorThrown) { handleChartAjaxError(chart, jqXHR, textStatus, errorThrown); });
+                                return false;
+                            }
+                        }
                     }, {
                         type: 'year',
                         count: 1,
-                        text: 'год'
+                        text: 'год',
+                        events: {
+                            click: function() {
+                                var chart = $('#container2').highcharts();
+                                chart.showLoading('Загрузка данных за год...');
+                                var now = new Date();
+                                var endTimestamp = Math.floor(now.getTime() / 1000);
+                                var start = new Date();
+                                start.setFullYear(start.getFullYear() - 1);
+                                var startTimestamp = Math.floor(start.getTime() / 1000);
+                                $.getJSON(`jsonp.php?start=${startTimestamp}&end=${endTimestamp}`)
+                                    .done(function(newData) { updateChartWithData(chart, newData, startTimestamp * 1000, endTimestamp * 1000); })
+                                    .fail(function(jqXHR, textStatus, errorThrown) { handleChartAjaxError(chart, jqXHR, textStatus, errorThrown); });
+                                return false;
+                            }
+                        }
                     }, {
                         type: 'all',
-                        text: 'Всё'
+                        text: 'Всё',
+                        events: {
+                            click: function() {
+                                var chart = $('#container2').highcharts();
+                                chart.showLoading('Загрузка всех данных...');
+                                $.getJSON('jsonp.php?range=all')
+                                    .done(function(newData) { updateChartWithData(chart, newData); }) // Для 'all' масштаб не задаем, он будет автоматическим
+                                    .fail(function(jqXHR, textStatus, errorThrown) { handleChartAjaxError(chart, jqXHR, textStatus, errorThrown); });
+                                return false;
+                            }
+                        }
                     }]
                 },
                 
@@ -801,6 +918,7 @@
             
             // Инициализация статистики при первой загрузке
             var initialExtremes = chart.xAxis[0].getExtremes();
+            chart.allRawData = data; // Сохраняем исходные данные
             updateStats(data, initialExtremes.min, initialExtremes.max);
 
             $('#exportCSV').click(function () {
@@ -839,7 +957,7 @@
                 // Начало листа
                 xml += ' <Worksheet ss:Name="Данные">\n';
                 xml += '  <Table ss:ExpandedColumnCount="8" ss:ExpandedRowCount="' + 
-                       (data.length + 1) + '" x:FullColumns="1" x:FullRows="1">\n';
+                       (chart.allRawData.length + 1) + '" x:FullColumns="1" x:FullRows="1">\n';
                 
                 // Задаем ширину столбцов
                 xml += '   <Column ss:Width="120"/>\n';
@@ -854,7 +972,7 @@
                 xml += '   </Row>\n';
                 
                 // Данные
-                data.forEach(function(row) {
+                chart.allRawData.forEach(function(row) {
                     if (row[0] * 1000 >= extremes.min && row[0] * 1000 <= extremes.max) {
                         xml += '   <Row>\n';
                         // Дата
@@ -923,7 +1041,7 @@
                 // Не используем кириллицу в заголовках
                 var csvContent = "Date;I1;I2;I3;U1;U2;U3;P\n";
                 
-                data.forEach(function(row) {
+                chart.allRawData.forEach(function(row) {
                     if (row[0] * 1000 >= extremes.min && row[0] * 1000 <= extremes.max) {
                         // Преобразуем timestamp в дату
                         var date = Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', row[0] * 1000);
