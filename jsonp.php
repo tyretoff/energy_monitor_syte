@@ -44,8 +44,8 @@ if ($range === 'all') {
     $stmt = $mysqli->prepare("SELECT `datetime`, `voltage1`, `voltage2`, `voltage3`, `current1`, `current2`, `current3`, `P` FROM `t_power3` WHERE `datetime` BETWEEN ? AND ? ORDER BY `datetime` ASC");
     $stmt->bind_param("ss", $startDate, $endDate);
 } else {
-    // По умолчанию - данные за последний месяц
-    $startDate = date('Y-m-d H:i:s', strtotime('-1 month'));
+    // По умолчанию - данные за последние сутки
+    $startDate = date('Y-m-d H:i:s', strtotime('-1 day'));
     $stmt = $mysqli->prepare("SELECT `datetime`, `voltage1`, `voltage2`, `voltage3`, `current1`, `current2`, `current3`, `P` FROM `t_power3` WHERE `datetime` >= ? ORDER BY `datetime` ASC");
     $stmt->bind_param("s", $startDate);
 }
