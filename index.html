@@ -746,6 +746,8 @@
                     }]
                 },
                 
+
+
                 legend: {
                     enabled: true,
                     layout: 'horizontal',
@@ -912,10 +914,8 @@
             chart.xAxis[0].setExtremes = function (min, max, redraw, animation) {
                 var range = max - min;
                 var units;
-                if (range >= 365 * 24 * 3600 * 1000) {
-                    units = [['month', [1]]];
-                } else if (range >= 30 * 24 * 3600 * 1000) {
-                    units = [['day', [1]]];
+                if (range >= 30 * 24 * 3600 * 1000) { // Для месяца и более
+                    units = [['hour', [3]]];
                 } else if (range > 24 * 3600 * 1000) {
                     units = [['hour', [1]]];
                 } else if (range >= 6 * 3600 * 1000) {
