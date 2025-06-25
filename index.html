@@ -642,6 +642,10 @@
                             xAxis: {
                 events: {
                     setExtremes: function (e) {
+                        // При ручном выборе диапазона сбрасываем флаг начальной загрузки
+                        if (e.trigger === 'rangeSelectorButton' || e.trigger === 'rangeSelectorInput') {
+                            this.chart.isInitialLoad = false;
+                        }
                         // Обновляем статистику при любом изменении масштаба
                         if (this.chart.allRawData) {
                             updateStats(this.chart.allRawData, e.min, e.max);
@@ -681,6 +685,7 @@
                         events: {
                             click: function() {
                                 var chart = $('#container2').highcharts();
+                                chart.isInitialLoad = false;
                                 chart.showLoading('Загрузка данных за неделю...');
                                 var now = new Date();
                                 var endTimestamp = Math.floor(now.getTime() / 1000);
@@ -699,6 +704,7 @@
                         events: {
                             click: function() {
                                 var chart = $('#container2').highcharts();
+                                chart.isInitialLoad = false;
                                 chart.showLoading('Загрузка данных за месяц...');
                                 var now = new Date();
                                 var endTimestamp = Math.floor(now.getTime() / 1000);
@@ -718,6 +724,7 @@
                         events: {
                             click: function() {
                                 var chart = $('#container2').highcharts();
+                                chart.isInitialLoad = false;
                                 chart.showLoading('Загрузка данных за год...');
                                 var now = new Date();
                                 var endTimestamp = Math.floor(now.getTime() / 1000);
@@ -736,6 +743,7 @@
                         events: {
                             click: function() {
                                 var chart = $('#container2').highcharts();
+                                chart.isInitialLoad = false;
                                 chart.showLoading('Загрузка всех данных...');
                                 $.getJSON('jsonp.php?range=all')
                                     .done(function(newData) { updateChartWithData(chart, newData); }) // Для 'all' масштаб не задаем, он будет автоматическим
@@ -929,13 +937,14 @@
                 originalSetExtremes.call(this, min, max, redraw, animation);
                 
                 // Обновление статистики при изменении диапазона
-                updateStats(data, min, max);
+                updateStats(chart.allRawData, min, max);
             };
             
             // Инициализация статистики при первой загрузке
             var initialExtremes = chart.xAxis[0].getExtremes();
             chart.allRawData = data; // Сохраняем исходные данные
             updateStats(data, initialExtremes.min, initialExtremes.max);
+            chart.isInitialLoad = true; // Флаг для определения начальной загрузки
 
             // Обработчик для экспорта в Excel
             $('#exportCSV').click(function () {
@@ -947,7 +956,12 @@
 
                 chart.allRawData.forEach(function(row) {
                     if (row[0] * 1000 >= extremes.min && row[0] * 1000 <= extremes.max) {
-                        var date = new Date(row[0] * 1000);
+                        var timestamp = row[0];
+                        // Применяем коррекцию только для начальной загрузки
+                        if (chart.isInitialLoad) {
+                            timestamp -= 10800;
+                        }
+                        var date = new Date(timestamp * 1000);
                         data.push([
                             date,
                             Math.round(row[4]), // I1
@@ -993,10 +1007,21 @@
                 
                 chart.allRawData.forEach(function(row) {
                     if (row[0] * 1000 >= extremes.min && row[0] * 1000 <= extremes.max) {
-                        // Преобразуем timestamp в дату
-                        var date = Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', row[0] * 1000);
+                        // Преобразуем timestamp в локальную дату
+                        var timestamp = row[0];
+                        // Применяем коррекцию только для начальной загрузки
+                        if (chart.isInitialLoad) {
+                            timestamp -= 10800;
+                        }
+                        var d = new Date(timestamp * 1000);
+                        var date = d.getFullYear() + '-'
+                            + ('0' + (d.getMonth() + 1)).slice(-2) + '-'
+                            + ('0' + d.getDate()).slice(-2) + ' '
+                            + ('0' + d.getHours()).slice(-2) + ':'
+                            + ('0' + d.getMinutes()).slice(-2) + ':'
+                            + ('0' + d.getSeconds()).slice(-2);
                         // Добавляем строку данных в CSV в формате: I1;I2;I3;U1;U2;U3;P
-                        csvContent += date + ";" + 
+                        csvContent += date + ";" +
                             Math.round(row[4]) + ";" +  // I1
                             Math.round(row[5]) + ";" +  // I2
                             Math.round(row[6]) + ";" +  // I3
