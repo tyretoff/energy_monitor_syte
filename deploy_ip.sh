@@ -3,10 +3,41 @@ set -e
 
 SITE_DIR="/var/www/power_site"
 GIT_REPO="https://github.com/tyretoff/energy_monitor_syte.git"
+TIMEZONE="Europe/Moscow"
 
 echo "=== Обновляем систему и ставим LAMP ==="
 sudo apt update
 sudo apt install -y apache2 mysql-server php libapache2-mod-php php-mysql unzip wget git
+
+echo "=== Настраиваем часовой пояс системы ==="
+sudo timedatectl set-timezone $TIMEZONE
+echo "✅ Системное время: $(date)"
+
+echo "=== Настраиваем часовой пояс PHP ==="
+PHP_INI_APACHE=$(php -r "echo php_ini_loaded_file();" 2>/dev/null || echo "/etc/php/8.3/apache2/php.ini")
+PHP_INI_CLI="/etc/php/8.3/cli/php.ini"
+
+# Настраиваем PHP для Apache
+if [ -f "$PHP_INI_APACHE" ]; then
+    sudo sed -i "s|;date.timezone =.*|date.timezone = $TIMEZONE|" "$PHP_INI_APACHE"
+    sudo sed -i "s|date.timezone =.*|date.timezone = $TIMEZONE|" "$PHP_INI_APACHE"
+    echo "✅ PHP Apache timezone: $TIMEZONE"
+fi
+
+# Настраиваем PHP CLI
+if [ -f "$PHP_INI_CLI" ]; then
+    sudo sed -i "s|;date.timezone =.*|date.timezone = $TIMEZONE|" "$PHP_INI_CLI"
+    sudo sed -i "s|date.timezone =.*|date.timezone = $TIMEZONE|" "$PHP_INI_CLI"
+fi
+
+echo "=== Настраиваем часовой пояс MySQL ==="
+MYSQL_CONF="/etc/mysql/mysql.conf.d/mysqld.cnf"
+if ! grep -q "default-time-zone" "$MYSQL_CONF"; then
+    echo -e "\n# Timezone settings\ndefault-time-zone = '+03:00'" | sudo tee -a "$MYSQL_CONF" > /dev/null
+    echo "✅ MySQL timezone: +03:00"
+else
+    echo "⚠️ MySQL timezone уже настроен"
+fi
 
 echo "=== Подтягиваем код сайта с GitHub ==="
 if [ -d "$SITE_DIR/.git" ]; then
@@ -89,7 +120,9 @@ echo "=== Активируем сайт и отключаем дефолтный
 sudo a2ensite power_site.conf > /dev/null 2>&1 || true
 sudo a2dissite 000-default.conf > /dev/null 2>&1 || true
 sudo a2enmod rewrite > /dev/null 2>&1 || true
-sudo systemctl reload apache2
+
+echo "=== Перезапускаем сервисы ==="
+sudo systemctl restart mysql
 sudo systemctl restart apache2
 
 CURRENT_ROOT=$(sudo apache2ctl -S 2>/dev/null | grep "DocumentRoot" | awk '{print $2}')
@@ -108,6 +141,13 @@ if [ ! -f /etc/apache2/conf-enabled/phpmyadmin.conf ]; then
     sudo systemctl reload apache2
 fi
 
+echo ""
+echo "=== Проверка настроек времени ==="
+echo "🕐 Системное время:  $(date '+%Y-%m-%d %H:%M:%S %Z')"
+echo "🕐 PHP timezone:     $(php -r 'echo date_default_timezone_get();')"
+echo "🕐 MySQL время:      $(mysql -u ${DB_USER} -p${DB_PASS} -sse 'SELECT NOW();' 2>/dev/null || echo 'N/A')"
+
+echo ""
 echo "=== Всё готово! ==="
 echo "🌐 Сайт:        http://${SERVER_IP}/"
 echo "🛠 phpMyAdmin:  http://${SERVER_IP}/phpmyadmin/"
