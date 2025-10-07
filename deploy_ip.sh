@@ -55,11 +55,14 @@ else
     fi
 fi
 
-echo "=== Настраиваем Apache на IP ==="
+echo "=== Проверяем и настраиваем Apache ==="
 VHOST_FILE="/etc/apache2/sites-available/power_site.conf"
 SERVER_IP=$(hostname -I | awk '{print $1}')
 
-sudo bash -c "cat > $VHOST_FILE" <<EOL
+# Если конфиг не существует — создаём
+if [ ! -f "$VHOST_FILE" ]; then
+    echo "⚙️ Конфиг power_site.conf не найден, создаём..."
+    sudo bash -c "cat > $VHOST_FILE" <<EOL
 <VirtualHost *:80>
     ServerName ${SERVER_IP}
     DocumentRoot $SITE_DIR
@@ -73,6 +76,7 @@ sudo bash -c "cat > $VHOST_FILE" <<EOL
     CustomLog \${APACHE_LOG_DIR}/power_site_access.log combined
 </VirtualHost>
 EOL
+fi
 
 echo "=== Активируем сайт и отключаем дефолтный Apache ==="
 sudo a2ensite power_site.conf > /dev/null 2>&1 || true
@@ -83,10 +87,9 @@ sudo systemctl restart apache2
 
 CURRENT_ROOT=$(sudo apache2ctl -S 2>/dev/null | grep "DocumentRoot" | awk '{print $2}')
 if [ "$CURRENT_ROOT" = "/var/www/power_site" ]; then
-    echo "✅ Apache настроен правильно. Сайт будет доступен по IP."
+    echo "✅ Apache настроен правильно. Сайт доступен по IP."
 else
     echo "⚠️ Внимание: DocumentRoot сейчас $CURRENT_ROOT — возможно, включен дефолтный сайт."
-    echo "Попробуй выполнить вручную: sudo a2ensite power_site.conf && sudo a2dissite 000-default.conf && sudo systemctl reload apache2"
 fi
 
 echo "=== Устанавливаем phpMyAdmin ==="
