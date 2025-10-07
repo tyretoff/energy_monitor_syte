@@ -74,10 +74,20 @@ sudo bash -c "cat > $VHOST_FILE" <<EOL
 </VirtualHost>
 EOL
 
-sudo a2ensite power_site.conf
-sudo a2dissite 000-default.conf
-sudo a2enmod rewrite
+echo "=== Активируем сайт и отключаем дефолтный Apache ==="
+sudo a2ensite power_site.conf > /dev/null 2>&1 || true
+sudo a2dissite 000-default.conf > /dev/null 2>&1 || true
+sudo a2enmod rewrite > /dev/null 2>&1 || true
 sudo systemctl reload apache2
+sudo systemctl restart apache2
+
+CURRENT_ROOT=$(sudo apache2ctl -S 2>/dev/null | grep "DocumentRoot" | awk '{print $2}')
+if [ "$CURRENT_ROOT" = "/var/www/power_site" ]; then
+    echo "✅ Apache настроен правильно. Сайт будет доступен по IP."
+else
+    echo "⚠️ Внимание: DocumentRoot сейчас $CURRENT_ROOT — возможно, включен дефолтный сайт."
+    echo "Попробуй выполнить вручную: sudo a2ensite power_site.conf && sudo a2dissite 000-default.conf && sudo systemctl reload apache2"
+fi
 
 echo "=== Устанавливаем phpMyAdmin ==="
 sudo apt install -y phpmyadmin
