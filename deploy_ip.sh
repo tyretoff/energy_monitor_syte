@@ -25,9 +25,16 @@ if [ ! -f "$CONFIG_FILE" ]; then
     exit 1
 fi
 
-DB_NAME=$(grep -oP '\$dbname\s*=\s*"\K[^"]+' "$CONFIG_FILE")
-DB_USER=$(grep -oP '\$dbuser\s*=\s*"\K[^"]+' "$CONFIG_FILE")
-DB_PASS=$(grep -oP '\$dbpass\s*=\s*"\K[^"]+' "$CONFIG_FILE")
+# Исправленный парсинг для формата массива PHP
+DB_NAME=$(grep -oP "'dbname'\s*=>\s*'\K[^']+" "$CONFIG_FILE")
+DB_USER=$(grep -oP "'username'\s*=>\s*'\K[^']+" "$CONFIG_FILE")
+DB_PASS=$(grep -oP "'password'\s*=>\s*'\K[^']+" "$CONFIG_FILE")
+
+if [ -z "$DB_NAME" ] || [ -z "$DB_USER" ] || [ -z "$DB_PASS" ]; then
+    echo "❌ Не удалось извлечь параметры БД из $CONFIG_FILE"
+    echo "Проверь формат файла конфигурации."
+    exit 1
+fi
 
 echo "📦 Найдено:"
 echo "  БД: $DB_NAME"
@@ -59,6 +66,7 @@ echo "=== Проверяем и настраиваем Apache ==="
 VHOST_FILE="/etc/apache2/sites-available/power_site.conf"
 SERVER_IP=$(hostname -I | awk '{print $1}')
 
+# Если конфиг не существует — создаём
 if [ ! -f "$VHOST_FILE" ]; then
     echo "⚙️ Конфиг power_site.conf не найден, создаём..."
     sudo bash -c "cat > $VHOST_FILE" <<EOL
@@ -84,20 +92,11 @@ sudo a2enmod rewrite > /dev/null 2>&1 || true
 sudo systemctl reload apache2
 sudo systemctl restart apache2
 
-echo "=== Финальная проверка Apache ==="
-if ! sudo apache2ctl -S 2>/dev/null | grep -q "power_site.conf"; then
-    echo "⚙️ Принудительно активируем power_site.conf..."
-    sudo a2ensite power_site.conf
-    sudo a2dissite 000-default.conf
-    sudo systemctl reload apache2
-    sudo systemctl restart apache2
-fi
-
-if sudo apache2ctl -S 2>/dev/null | grep -q "/var/www/power_site"; then
-    echo "✅ Apache настроен на /var/www/power_site — сайт доступен по IP!"
+CURRENT_ROOT=$(sudo apache2ctl -S 2>/dev/null | grep "DocumentRoot" | awk '{print $2}')
+if [ "$CURRENT_ROOT" = "/var/www/power_site" ]; then
+    echo "✅ Apache настроен правильно. Сайт доступен по IP."
 else
-    echo "⚠️ Что-то пошло не так — Apache всё ещё смотрит на /var/www/html."
-    echo "Проверь конфиг /etc/apache2/sites-available/power_site.conf вручную."
+    echo "⚠️ Внимание: DocumentRoot сейчас $CURRENT_ROOT — возможно, включен дефолтный сайт."
 fi
 
 echo "=== Устанавливаем phpMyAdmin ==="
