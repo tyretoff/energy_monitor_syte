@@ -4,10 +4,13 @@ set -e
 SITE_DIR="/var/www/power_site"
 GIT_REPO="https://github.com/tyretoff/energy_monitor_syte.git"
 TIMEZONE="Europe/Moscow"
+DOMAIN="elbs.ru"
+HTTPS_PORT="8443"
+EMAIL="admin@${DOMAIN}"  # Email для Let's Encrypt уведомлений
 
 echo "=== Обновляем систему и ставим LAMP ==="
 sudo apt update
-sudo apt install -y apache2 mysql-server php libapache2-mod-php php-mysql unzip wget git
+sudo apt install -y apache2 mysql-server php libapache2-mod-php php-mysql unzip wget git certbot python3-certbot-apache
 
 echo "=== Настраиваем часовой пояс системы ==="
 sudo timedatectl set-timezone $TIMEZONE
@@ -93,16 +96,15 @@ else
     fi
 fi
 
-echo "=== Проверяем и настраиваем Apache ==="
+echo "=== Проверяем и настраиваем Apache (HTTP) ==="
 VHOST_FILE="/etc/apache2/sites-available/power_site.conf"
 SERVER_IP=$(hostname -I | awk '{print $1}')
 
-# Если конфиг не существует — создаём
-if [ ! -f "$VHOST_FILE" ]; then
-    echo "⚙️ Конфиг power_site.conf не найден, создаём..."
-    sudo bash -c "cat > $VHOST_FILE" <<EOL
+# Создаём HTTP конфиг
+sudo bash -c "cat > $VHOST_FILE" <<EOL
 <VirtualHost *:80>
-    ServerName ${SERVER_IP}
+    ServerName ${DOMAIN}
+    ServerAlias www.${DOMAIN}
     DocumentRoot $SITE_DIR
 
     <Directory $SITE_DIR>
@@ -112,24 +114,88 @@ if [ ! -f "$VHOST_FILE" ]; then
 
     ErrorLog \${APACHE_LOG_DIR}/power_site_error.log
     CustomLog \${APACHE_LOG_DIR}/power_site_access.log combined
+
+    # Редирект на HTTPS
+    RewriteEngine On
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}:${HTTPS_PORT}\$1 [R=301,L]
 </VirtualHost>
 EOL
+
+echo "=== Настраиваем Apache для порта ${HTTPS_PORT} ==="
+PORTS_CONF="/etc/apache2/ports.conf"
+if ! grep -q "Listen ${HTTPS_PORT}" "$PORTS_CONF"; then
+    echo "Listen ${HTTPS_PORT}" | sudo tee -a "$PORTS_CONF" > /dev/null
+    echo "✅ Добавлен порт ${HTTPS_PORT} в ports.conf"
 fi
 
-echo "=== Активируем сайт и отключаем дефолтный Apache ==="
+echo "=== Получаем SSL сертификат от Let's Encrypt ==="
+# Проверяем, существует ли уже сертификат
+if [ ! -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
+    echo "🔒 Запрашиваем новый сертификат для ${DOMAIN}..."
+    sudo certbot certonly --apache --non-interactive --agree-tos --email ${EMAIL} \
+        -d ${DOMAIN} -d www.${DOMAIN} || {
+        echo "⚠️ Не удалось получить сертификат. Проверь DNS настройки домена ${DOMAIN}"
+        echo "Продолжаем без HTTPS..."
+    }
+else
+    echo "✅ Сертификат для ${DOMAIN} уже существует"
+fi
+
+# Создаём HTTPS конфиг на порту 8443
+if [ -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
+    echo "=== Создаём HTTPS конфигурацию ==="
+    VHOST_SSL_FILE="/etc/apache2/sites-available/power_site-ssl.conf"
+    
+    sudo bash -c "cat > $VHOST_SSL_FILE" <<EOL
+<VirtualHost *:${HTTPS_PORT}>
+    ServerName ${DOMAIN}
+    ServerAlias www.${DOMAIN}
+    DocumentRoot $SITE_DIR
+
+    SSLEngine on
+    SSLCertificateFile /etc/letsencrypt/live/${DOMAIN}/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/${DOMAIN}/privkey.pem
+
+    <Directory $SITE_DIR>
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog \${APACHE_LOG_DIR}/power_site_ssl_error.log
+    CustomLog \${APACHE_LOG_DIR}/power_site_ssl_access.log combined
+</VirtualHost>
+EOL
+
+    sudo a2ensite power_site-ssl.conf > /dev/null 2>&1 || true
+    echo "✅ HTTPS конфигурация создана на порту ${HTTPS_PORT}"
+fi
+
+echo "=== Активируем сайт и модули Apache ==="
 sudo a2ensite power_site.conf > /dev/null 2>&1 || true
 sudo a2dissite 000-default.conf > /dev/null 2>&1 || true
+sudo a2enmod ssl > /dev/null 2>&1 || true
 sudo a2enmod rewrite > /dev/null 2>&1 || true
 
 echo "=== Перезапускаем сервисы ==="
 sudo systemctl restart mysql
 sudo systemctl restart apache2
 
+echo "=== Настраиваем автообновление сертификатов ==="
+# Certbot автоматически добавляет cron job, проверим его
+if sudo systemctl is-active --quiet certbot.timer; then
+    echo "✅ Автообновление сертификатов активно"
+else
+    sudo systemctl enable certbot.timer
+    sudo systemctl start certbot.timer
+    echo "✅ Включено автообновление сертификатов"
+fi
+
 CURRENT_ROOT=$(sudo apache2ctl -S 2>/dev/null | grep "DocumentRoot" | awk '{print $2}')
 if [ "$CURRENT_ROOT" = "/var/www/power_site" ]; then
-    echo "✅ Apache настроен правильно. Сайт доступен по IP."
+    echo "✅ Apache настроен правильно"
 else
-    echo "⚠️ Внимание: DocumentRoot сейчас $CURRENT_ROOT — возможно, включен дефолтный сайт."
+    echo "⚠️ Внимание: DocumentRoot сейчас $CURRENT_ROOT"
 fi
 
 echo "=== Устанавливаем phpMyAdmin ==="
@@ -148,9 +214,18 @@ echo "🕐 PHP timezone:     $(php -r 'echo date_default_timezone_get();')"
 echo "🕐 MySQL время:      $(mysql -u ${DB_USER} -p${DB_PASS} -sse 'SELECT NOW();' 2>/dev/null || echo 'N/A')"
 
 echo ""
-echo "=== Всё готово! ==="
-echo "🌐 Сайт:        http://${SERVER_IP}/"
-echo "🛠 phpMyAdmin:  http://${SERVER_IP}/phpmyadmin/"
-echo "📂 Код сайта:   $SITE_DIR"
-echo "💾 Конфигурация БД: CFG/config.php"
-echo "🔄 Обновить код вручную: cd $SITE_DIR && git pull"
+echo "════════════════════════════════════════════════════════════"
+echo "✅ Всё готово!"
+echo "════════════════════════════════════════════════════════════"
+echo "🌐 HTTP (редирект):  http://${DOMAIN}/"
+if [ -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
+    echo "🔒 HTTPS:            https://${DOMAIN}:${HTTPS_PORT}/"
+fi
+echo "🛠  phpMyAdmin:       http://${SERVER_IP}/phpmyadmin/"
+echo "📂 Код сайта:        $SITE_DIR"
+echo "💾 Конфигурация БД:  CFG/config.php"
+echo "🔄 Обновить код:     cd $SITE_DIR && git pull"
+echo ""
+echo "📝 Важно: Убедись, что домен ${DOMAIN} указывает на IP ${SERVER_IP}"
+echo "🔥 Firewall: Открой порт ${HTTPS_PORT} если используешь UFW/iptables"
+echo "════════════════════════════════════════════════════════════"
