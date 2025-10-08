@@ -1,116 +1,179 @@
-# ⚡ Energy Monitor Syte
+# 🚀 Автоматическое развертывание Energy Monitor Site
 
-Веб-приложение для отображения и анализа данных энергомониторинга.  
-Сайт написан на **PHP**, использует **MySQL** и работает на сервере с **Apache (LAMP)**.
+Два варианта установки веб-приложения для мониторинга энергопотребления на Ubuntu Server с LAMP стеком.
 
----
+## 📋 Предварительные требования
 
-## 🚀 Установка на VPS (Ubuntu)
-
-### 1. Подготовка сервера
-
-Подключись к серверу по SSH и выполни:
-
-```bash
-sudo apt update
-sudo apt install git -y
-```
+- Ubuntu Server 20.04+ (проверено на 24.04)
+- Root доступ или sudo права
+- Интернет-соединение
+- Для HTTPS версии: настроенный домен, указывающий на IP сервера
 
 ---
 
-### 2. Клонирование репозитория
+## ⚡ Вариант 1: Базовая установка (HTTP)
+
+Простая установка без SSL сертификата. Доступ по IP адресу через HTTP.
+
+### Что устанавливается:
+- ✅ Apache2, MySQL, PHP (LAMP stack)
+- ✅ Настройка часовых поясов (система, PHP, MySQL)
+- ✅ База данных с импортом дампа
+- ✅ phpMyAdmin
+- ✅ Сайт доступен по HTTP
+
+### Установка:
 
 ```bash
-sudo git clone https://github.com/tyretoff/energy_monitor_syte.git /var/www/power_site
-```
-
----
-
-### 3. Установка всего окружения
-
-```bash
-wget https://raw.githubusercontent.com/tyretoff/energy_monitor_syte/master/deploy_ip.sh
+wget https://raw.githubusercontent.com/tyretoff/energy_monitor_syte/master/deploy_ip.sh -O deploy_ip.sh
 chmod +x deploy_ip.sh
 ./deploy_ip.sh
 ```
 
-Скрипт автоматически:
-- Установит **Apache, MySQL, PHP**
-- Создаст базу данных и пользователя
-- Импортирует структуру и данные из `s817757_power.sql`
-- Настроит Apache на работу по IP (без домена)
-- Установит **phpMyAdmin**
-- Подтянет код сайта из GitHub
+### После установки доступно:
 
----
+- 🌐 **Сайт:** `http://ВАШ_IP/`
+- 🛠️ **phpMyAdmin:** `http://ВАШ_IP/phpmyadmin/`
 
-### 4. Проверка работы
-
-```
-http://<IP_твоего_сервера>/
-http://<IP_твоего_сервера>/phpmyadmin/
-```
-
----
-
-### 5. Настройка базы данных
-
-Файл конфигурации: `CFG/config.php`  
-Скрипт берёт из него `$dbname`, `$dbuser`, `$dbpass`.
-
----
-
-### 6. Обновление сайта
+### Обновление кода:
 
 ```bash
-cd /var/www/power_site
-git pull
-sudo systemctl reload apache2
+cd /var/www/power_site && git pull
 ```
 
 ---
 
-### 7. Подключение домена и HTTPS
+## 🔒 Вариант 2: Установка с HTTPS (Let's Encrypt)
 
-Когда появится домен, можно запустить расширенный скрипт с поддержкой Let's Encrypt.
+Полная установка с SSL сертификатом от Let's Encrypt на кастомном порту 8443.
 
----
+### Что устанавливается:
+- ✅ Всё из базовой версии
+- ✅ Certbot для получения SSL сертификата
+- ✅ HTTPS на порту 8443
+- ✅ Автоматический редирект с HTTP на HTTPS для домена
+- ✅ HTTP API остаётся доступным по IP (для скриптов обновления данных)
+- ✅ Автообновление сертификата каждые 60 дней
 
-## 🧰 Ошибки и отладка
+### ⚠️ Важные требования:
 
-Если сайт не открывается, проверь логи:
+1. **Домен должен указывать на IP сервера** (проверьте DNS)
+2. **Порт 8443 свободен** (порт 443 может быть занят другими сервисами)
+3. **Откройте порт 8443 в firewall** если используется
 
-**Apache:**
+### Перед установкой:
+
 ```bash
-sudo tail -n 30 /var/log/apache2/error.log
+# Проверьте DNS домена
+dig +short elbs.ru  # Должен вернуть ваш IP
+
+# Откройте порт 8443 (если используется UFW)
+sudo ufw allow 8443/tcp
+
+# Или для iptables
+sudo iptables -A INPUT -p tcp --dport 8443 -j ACCEPT
 ```
 
-**MySQL:**
+### Установка:
+
 ```bash
-sudo systemctl status mysql
-sudo journalctl -u mysql -n 20
+wget https://raw.githubusercontent.com/tyretoff/energy_monitor_syte/master/deploy_ip_https.sh -O deploy_ip_https.sh
+chmod +x deploy_ip_https.sh
+./deploy_ip_https.sh
 ```
 
-**phpMyAdmin:**
-Если не открывается `/phpmyadmin/`, проверь:
+### Настройка домена:
+
+Отредактируйте скрипт перед запуском, если нужен другой домен:
+
 ```bash
-sudo a2enconf phpmyadmin.conf
-sudo systemctl reload apache2
+nano deploy_ip_https.sh
+
+# Измените переменные:
+DOMAIN="ваш-домен.ru"
+HTTPS_PORT="8443"  # Или другой порт
+EMAIL="admin@ваш-домен.ru"
+```
+
+### После установки доступно:
+
+- 🔓 **HTTP (редирект):** `http://elbs.ru/` → автоматически перенаправляет на HTTPS
+- 🔒 **HTTPS:** `https://elbs.ru:8443/`
+- 🌐 **HTTP API:** `http://ВАШ_IP/` (без редиректа, для скриптов)
+- 🛠️ **phpMyAdmin:** `http://ВАШ_IP/phpmyadmin/`
+
+---
+
+## 🛠️ Что делают скрипты
+
+### Общие действия:
+
+1. **Устанавливают LAMP стек:** Apache, MySQL, PHP
+2. **Настраивают часовые пояса:** 
+   - Система: `Europe/Moscow` (UTC+3)
+   - PHP: `date.timezone = Europe/Moscow`
+   - MySQL: `default-time-zone = '+03:00'`
+3. **Клонируют код с GitHub** в `/var/www/power_site`
+4. **Парсят конфиг** `CFG/config.php` для параметров БД
+5. **Создают базу данных** и импортируют дамп `s817757_power.sql`
+6. **Настраивают Apache** с правильными виртуальными хостами
+7. **Устанавливают phpMyAdmin**
+
+### Дополнительно для HTTPS версии:
+
+8. **Получают SSL сертификат** от Let's Encrypt через Certbot
+9. **Настраивают два виртуальных хоста:**
+   - Домен → редирект на HTTPS:8443
+   - IP → прямой HTTP доступ (для API)
+10. **Настраивают автообновление сертификата**
+11. **Исключают порт 443** из Apache (если занят Docker/другими сервисами)
+
+---
+
+## 📁 Структура проекта
+
+```
+/var/www/power_site/
+├── CFG/
+│   └── config.php          # Конфигурация БД
+├── index.php               # Главная страница
+├── s817757_power.sql       # SQL дамп базы данных
+└── ...                     # Остальные файлы проекта
 ```
 
 ---
 
-## 📂 Структура проекта
+## 🔧 Устранение неполадок
 
+### Apache не запускается
+
+```bash
+# Проверьте синтаксис конфигурации
+sudo apache2ctl configtest
+
+# Посмотрите логи ошибок
+sudo journalctl -xeu apache2.service --no-pager | tail -30
+
+# Проверьте, что порты свободны
+sudo lsof -i :80
+sudo lsof -i :8443
 ```
-CFG/                # Настройки подключения к базе
-s817757_power.sql   # Дамп базы данных
-index.php           # Главная страница
-deploy_ip.sh        # Скрипт установки
+
+### Сертификат не получается
+
+```bash
+# Проверьте DNS
+dig +short elbs.ru
+
+# Попробуйте получить вручную
+sudo certbot certonly --apache -d elbs.ru -d www.elbs.ru
 ```
 
----
+### Данные не обновляются
 
-## 🧠 Автор
+```bash
+# Проверьте доступность HTTP API
+curl -I http://ВАШ_IP/
 
-Проект: [tyretoff](https://github.com/tyretoff)
+# Проверьте логи Apache
+sudo tail -f /var/log/apache2/power_site_error.
