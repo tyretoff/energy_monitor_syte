@@ -100,8 +100,11 @@ echo "=== Проверяем и настраиваем Apache (HTTP) ==="
 VHOST_FILE="/etc/apache2/sites-available/power_site.conf"
 SERVER_IP=$(hostname -I | awk '{print $1}')
 
-# Создаём HTTP конфиг
+# Создаём HTTP конфиг с двумя виртуальными хостами
+# 1. Для домена - с редиректом на HTTPS
+# 2. Для IP - без редиректа (для скриптов обновления данных)
 sudo bash -c "cat > $VHOST_FILE" <<EOL
+# Виртуальный хост для доменного имени (с редиректом на HTTPS)
 <VirtualHost *:80>
     ServerName ${DOMAIN}
     ServerAlias www.${DOMAIN}
@@ -115,12 +118,31 @@ sudo bash -c "cat > $VHOST_FILE" <<EOL
     ErrorLog \${APACHE_LOG_DIR}/power_site_error.log
     CustomLog \${APACHE_LOG_DIR}/power_site_access.log combined
 
-    # Редирект на HTTPS
+    # Редирект на HTTPS только для доменного имени
     RewriteEngine On
     RewriteCond %{HTTPS} off
-    RewriteRule ^(.*)$ https://%{HTTP_HOST}:${HTTPS_PORT}\$1 [R=301,L]
+    RewriteCond %{HTTP_HOST} ^(www\.)?${DOMAIN}\$ [NC]
+    RewriteRule ^(.*)\$ https://%{HTTP_HOST}:${HTTPS_PORT}\$1 [R=301,L]
+</VirtualHost>
+
+# Виртуальный хост для доступа по IP (без редиректа для API/скриптов)
+<VirtualHost *:80>
+    ServerName ${SERVER_IP}
+    DocumentRoot $SITE_DIR
+
+    <Directory $SITE_DIR>
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog \${APACHE_LOG_DIR}/power_site_error.log
+    CustomLog \${APACHE_LOG_DIR}/power_site_access.log combined
 </VirtualHost>
 EOL
+
+echo "✅ HTTP конфигурация создана:"
+echo "   - http://${DOMAIN}/ → редирект на HTTPS"
+echo "   - http://${SERVER_IP}/ → прямой доступ (для API)"
 
 echo "=== Настраиваем Apache для портов 80 и ${HTTPS_PORT} ==="
 PORTS_CONF="/etc/apache2/ports.conf"
