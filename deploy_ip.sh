@@ -122,20 +122,24 @@ sudo bash -c "cat > $VHOST_FILE" <<EOL
 </VirtualHost>
 EOL
 
-echo "=== Настраиваем Apache для порта ${HTTPS_PORT} ==="
+echo "=== Настраиваем Apache для портов 80 и ${HTTPS_PORT} ==="
 PORTS_CONF="/etc/apache2/ports.conf"
 
-# Убираем Listen 443 если есть (может конфликтовать с другими сервисами)
-sudo sed -i '/<IfModule ssl_module>/,/<\/IfModule>/d' "$PORTS_CONF"
-sudo sed -i '/<IfModule mod_gnutls.c>/,/<\/IfModule>/d' "$PORTS_CONF"
-sudo sed -i '/^Listen 443/d' "$PORTS_CONF"
+# Полностью перезаписываем ports.conf, исключая порт 443
+sudo bash -c "cat > $PORTS_CONF" <<'PORTSEOF'
+# If you just change the port or add more ports here, you will likely also
+# have to change the VirtualHost statement in
+# /etc/apache2/sites-enabled/000-default.conf
 
-if ! grep -q "Listen ${HTTPS_PORT}" "$PORTS_CONF"; then
-    echo "Listen ${HTTPS_PORT}" | sudo tee -a "$PORTS_CONF" > /dev/null
-    echo "✅ Добавлен порт ${HTTPS_PORT} в ports.conf"
-fi
+Listen 80
+Listen 8443
 
-echo "✅ Порт 443 отключен (используем только ${HTTPS_PORT})"
+# SSL/TLS ports are configured in virtual host files
+# Port 443 is NOT used (occupied by Docker)
+PORTSEOF
+
+echo "✅ ports.conf настроен (Listen 80, Listen ${HTTPS_PORT})"
+echo "✅ Порт 443 исключен (занят Docker)"
 
 echo "=== Получаем SSL сертификат от Let's Encrypt ==="
 # Проверяем, существует ли уже сертификат
