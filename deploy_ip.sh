@@ -124,10 +124,18 @@ EOL
 
 echo "=== Настраиваем Apache для порта ${HTTPS_PORT} ==="
 PORTS_CONF="/etc/apache2/ports.conf"
+
+# Убираем Listen 443 если есть (может конфликтовать с другими сервисами)
+sudo sed -i '/<IfModule ssl_module>/,/<\/IfModule>/d' "$PORTS_CONF"
+sudo sed -i '/<IfModule mod_gnutls.c>/,/<\/IfModule>/d' "$PORTS_CONF"
+sudo sed -i '/^Listen 443/d' "$PORTS_CONF"
+
 if ! grep -q "Listen ${HTTPS_PORT}" "$PORTS_CONF"; then
     echo "Listen ${HTTPS_PORT}" | sudo tee -a "$PORTS_CONF" > /dev/null
     echo "✅ Добавлен порт ${HTTPS_PORT} в ports.conf"
 fi
+
+echo "✅ Порт 443 отключен (используем только ${HTTPS_PORT})"
 
 echo "=== Получаем SSL сертификат от Let's Encrypt ==="
 # Проверяем, существует ли уже сертификат
