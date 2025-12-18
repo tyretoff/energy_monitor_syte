@@ -104,6 +104,37 @@
             color: #2c3e50;
         }
 
+        #dataWarning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        #dataWarning.show {
+            display: block;
+        }
+
+        #dataWarning .warning-title {
+            font-weight: 600;
+            color: #856404;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+
+        #dataWarning .warning-message {
+            color: #856404;
+            font-size: 14px;
+        }
+
+        #dataWarning .warning-date {
+            font-weight: 600;
+            color: #d39e00;
+        }
+
         #container2 {
             height: 700px;
             background: white;
@@ -337,6 +368,14 @@
         <h1 style="margin: 0;">Мониторинг Меркурий236</h1>
     </div>
 
+    <div id="dataWarning">
+        <div class="warning-title">⚠️ Внимание</div>
+        <div class="warning-message">
+            Данные за последние сутки отсутствуют. Отображаются последние доступные данные.<br>
+            Последнее обновление: <span class="warning-date" id="lastDataDate">-</span>
+        </div>
+    </div>
+
     <div id="latestData">
         <div class="data-item time-item">
             <div class="data-label">Последние показания контроллера</div>
@@ -496,11 +535,40 @@
             document.getElementById('maxPower').textContent = stats.power.max.toFixed(1);
         }
 
-        $.getJSON('jsonp.php', function (data) {
+        $.getJSON('jsonp.php', function (response) {
+            // Обработка нового формата ответа с fallback
+            var data, isFallback = false, fallbackMessage = '';
+            
+            if (response && response.data) {
+                // Новый формат с метаданными
+                data = response.data;
+                isFallback = response.fallback || false;
+                fallbackMessage = response.message || '';
+            } else if (Array.isArray(response)) {
+                // Старый формат (массив данных)
+                data = response;
+            } else {
+                data = [];
+            }
+            
             if (!data || data.length === 0) {
                 console.error('Нет данных для отображения');
-                alert('Ошибка: Нет данных для отображения');
+                document.getElementById('header').innerHTML = '<h1 style="margin: 0;">Мониторинг Меркурий236</h1><p style="color: #e74c3c; margin-top: 10px;">❌ В базе данных нет записей. Ожидание данных от контроллера...</p>';
                 return;
+            }
+            
+            // Показываем предупреждение, если данные загружены через fallback
+            if (isFallback) {
+                var lastDataTimestamp = data[data.length - 1][0] * 1000;
+                var lastDataDate = new Date(lastDataTimestamp);
+                var now = new Date();
+                var hoursDiff = Math.floor((now - lastDataDate) / (1000 * 60 * 60));
+                
+                document.getElementById('lastDataDate').textContent = 
+                    Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', lastDataTimestamp) + 
+                    ' (' + (hoursDiff < 24 ? hoursDiff + ' ч. назад' : Math.floor(hoursDiff / 24) + ' дн. назад') + ')';
+                document.getElementById('dataWarning').classList.add('show');
+                console.warn('Fallback: ' + fallbackMessage);
             }
 
             var voltage1 = [], voltage2 = [], voltage3 = [],
@@ -535,7 +603,32 @@
 
             // Функция для обновления всех данных
             function updateAllData() {
-                $.getJSON('jsonp.php', function(newData) {
+                $.getJSON('jsonp.php', function(response) {
+                    // Обработка нового формата ответа
+                    var newData;
+                    if (response && response.data) {
+                        newData = response.data;
+                        // Обновляем предупреждение, если данные через fallback
+                        if (response.fallback) {
+                            var lastDataTimestamp = newData[newData.length - 1][0] * 1000;
+                            var lastDataDate = new Date(lastDataTimestamp);
+                            var now = new Date();
+                            var hoursDiff = Math.floor((now - lastDataDate) / (1000 * 60 * 60));
+                            
+                            document.getElementById('lastDataDate').textContent = 
+                                Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', lastDataTimestamp) + 
+                                ' (' + (hoursDiff < 24 ? hoursDiff + ' ч. назад' : Math.floor(hoursDiff / 24) + ' дн. назад') + ')';
+                            document.getElementById('dataWarning').classList.add('show');
+                        } else {
+                            // Скрываем предупреждение, если данные актуальные
+                            document.getElementById('dataWarning').classList.remove('show');
+                        }
+                    } else if (Array.isArray(response)) {
+                        newData = response;
+                    } else {
+                        newData = [];
+                    }
+                    
                     if (!newData || newData.length === 0) {
                         console.error('Нет новых данных для обновления');
                         return;
@@ -575,7 +668,31 @@
             resetUpdateTimer();
 
             // --- Вспомогательные функции для загрузки данных в диаграмму ---
-            function updateChartWithData(chart, newData, startMillis, endMillis) {
+            function updateChartWithData(chart, response, startMillis, endMillis) {
+                // Обработка нового формата ответа
+                var newData;
+                if (response && response.data) {
+                    newData = response.data;
+                    // Обновляем предупреждение, если данные через fallback
+                    if (response.fallback) {
+                        var lastDataTimestamp = newData[newData.length - 1][0] * 1000;
+                        var lastDataDate = new Date(lastDataTimestamp);
+                        var now = new Date();
+                        var hoursDiff = Math.floor((now - lastDataDate) / (1000 * 60 * 60));
+                        
+                        document.getElementById('lastDataDate').textContent = 
+                            Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', lastDataTimestamp) + 
+                            ' (' + (hoursDiff < 24 ? hoursDiff + ' ч. назад' : Math.floor(hoursDiff / 24) + ' дн. назад') + ')';
+                        document.getElementById('dataWarning').classList.add('show');
+                    } else {
+                        document.getElementById('dataWarning').classList.remove('show');
+                    }
+                } else if (Array.isArray(response)) {
+                    newData = response;
+                } else {
+                    newData = [];
+                }
+                
                 if (!newData || newData.length === 0) {
                     console.error('Нет данных для отображения');
                     alert('Ошибка: Нет данных для отображения');
