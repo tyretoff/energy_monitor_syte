@@ -12,6 +12,18 @@ echo "=== Обновляем систему и ставим LAMP ==="
 sudo apt update
 sudo apt install -y apache2 mysql-server php libapache2-mod-php php-mysql unzip wget git certbot python3-certbot-apache
 
+echo "=== Определяем версию PHP и устанавливаем php-curl ==="
+PHP_VERSION=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null)
+if [ -n "$PHP_VERSION" ]; then
+    echo "📦 Установлена PHP $PHP_VERSION — ставим php${PHP_VERSION}-curl"
+    sudo apt install -y php${PHP_VERSION}-curl
+else
+    echo "⚠️ Не удалось определить версию PHP, пробуем установить php-curl"
+    sudo apt install -y php-curl
+fi
+sudo systemctl restart apache2
+
+
 echo "=== Настраиваем часовой пояс системы ==="
 sudo timedatectl set-timezone $TIMEZONE
 echo "✅ Системное время: $(date)"
