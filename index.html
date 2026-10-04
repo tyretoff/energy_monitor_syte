@@ -1073,14 +1073,17 @@
 
                 chart.allRawData.forEach(function(row) {
                     if (row[0] * 1000 >= extremes.min && row[0] * 1000 <= extremes.max) {
-                        var timestamp = row[0];
-                        // Применяем коррекцию только для начальной загрузки
-                        if (chart.isInitialLoad) {
-                            timestamp -= 10800;
-                        }
-                        var date = new Date(timestamp * 1000);
+                        // Timestamp в БД хранится как местное время без смещения,
+                        // поэтому используем UTC-методы чтобы получить то же время что на графике
+                        var d = new Date(row[0] * 1000);
+                        var dateStr = d.getUTCFullYear() + '-'
+                            + ('0' + (d.getUTCMonth() + 1)).slice(-2) + '-'
+                            + ('0' + d.getUTCDate()).slice(-2) + ' '
+                            + ('0' + d.getUTCHours()).slice(-2) + ':'
+                            + ('0' + d.getUTCMinutes()).slice(-2) + ':'
+                            + ('0' + d.getUTCSeconds()).slice(-2);
                         data.push([
-                            date,
+                            dateStr,
                             Math.round(row[4]), // I1
                             Math.round(row[5]), // I2
                             Math.round(row[6]), // I3
@@ -1101,12 +1104,6 @@
                     { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 }
                 ];
                 
-                // Применение формата даты ко всему столбцу A, начиная со второй строки
-                for (var i = 1; i < data.length; i++) {
-                    var cellRef = XLSX.utils.encode_cell({c: 0, r: i}); // A2, A3, ...
-                    if(ws[cellRef]) ws[cellRef].z = 'dd.mm.yyyy hh:mm:ss';
-                }
-
                 // Создание книги
                 var wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, 'Данные');
@@ -1124,19 +1121,15 @@
                 
                 chart.allRawData.forEach(function(row) {
                     if (row[0] * 1000 >= extremes.min && row[0] * 1000 <= extremes.max) {
-                        // Преобразуем timestamp в локальную дату
-                        var timestamp = row[0];
-                        // Применяем коррекцию только для начальной загрузки
-                        if (chart.isInitialLoad) {
-                            timestamp -= 10800;
-                        }
-                        var d = new Date(timestamp * 1000);
-                        var date = d.getFullYear() + '-'
-                            + ('0' + (d.getMonth() + 1)).slice(-2) + '-'
-                            + ('0' + d.getDate()).slice(-2) + ' '
-                            + ('0' + d.getHours()).slice(-2) + ':'
-                            + ('0' + d.getMinutes()).slice(-2) + ':'
-                            + ('0' + d.getSeconds()).slice(-2);
+                        // Timestamp в БД хранится как местное время без смещения,
+                        // поэтому используем UTC-методы чтобы получить то же время что на графике
+                        var d = new Date(row[0] * 1000);
+                        var date = d.getUTCFullYear() + '-'
+                            + ('0' + (d.getUTCMonth() + 1)).slice(-2) + '-'
+                            + ('0' + d.getUTCDate()).slice(-2) + ' '
+                            + ('0' + d.getUTCHours()).slice(-2) + ':'
+                            + ('0' + d.getUTCMinutes()).slice(-2) + ':'
+                            + ('0' + d.getUTCSeconds()).slice(-2);
                         // Добавляем строку данных в CSV в формате: I1;I2;I3;U1;U2;U3;P
                         csvContent += date + ";" +
                             Math.round(row[4]) + ";" +  // I1
