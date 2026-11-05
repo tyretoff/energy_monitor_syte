@@ -5,7 +5,7 @@ SITE_DIR="/var/www/power_site"
 GIT_REPO="https://github.com/tyretoff/energy_monitor_syte.git"
 TIMEZONE="Europe/Moscow"
 DOMAIN="elbs.ru"
-HTTPS_PORT="8443"
+HTTPS_PORT="443"
 EMAIL="admin@${DOMAIN}"  # Email для Let's Encrypt уведомлений
 
 echo "=== Обновляем систему и ставим LAMP ==="
@@ -130,11 +130,11 @@ sudo bash -c "cat > $VHOST_FILE" <<EOL
     ErrorLog \${APACHE_LOG_DIR}/power_site_error.log
     CustomLog \${APACHE_LOG_DIR}/power_site_access.log combined
 
-    # Редирект на HTTPS только для доменного имени
+    # Редирект на HTTPS (стандартный порт 443)
     RewriteEngine On
     RewriteCond %{HTTPS} off
     RewriteCond %{HTTP_HOST} ^(www\.)?${DOMAIN}\$ [NC]
-    RewriteRule ^(.*)\$ https://%{HTTP_HOST}:${HTTPS_PORT}\$1 [R=301,L]
+    RewriteRule ^(.*)\$ https://%{HTTP_HOST}\$1 [R=301,L]
 </VirtualHost>
 
 # Виртуальный хост для доступа по IP (без редиректа для API/скриптов)
@@ -159,21 +159,24 @@ echo "   - http://${SERVER_IP}/ → прямой доступ (для API)"
 echo "=== Настраиваем Apache для портов 80 и ${HTTPS_PORT} ==="
 PORTS_CONF="/etc/apache2/ports.conf"
 
-# Полностью перезаписываем ports.conf, исключая порт 443
+# Полностью перезаписываем ports.conf
 sudo bash -c "cat > $PORTS_CONF" <<'PORTSEOF'
 # If you just change the port or add more ports here, you will likely also
 # have to change the VirtualHost statement in
 # /etc/apache2/sites-enabled/000-default.conf
 
 Listen 80
-Listen 8443
 
-# SSL/TLS ports are configured in virtual host files
-# Port 443 is NOT used (occupied by Docker)
+<IfModule ssl_module>
+	Listen 443
+</IfModule>
+
+<IfModule mod_gnutls.c>
+	Listen 443
+</IfModule>
 PORTSEOF
 
 echo "✅ ports.conf настроен (Listen 80, Listen ${HTTPS_PORT})"
-echo "✅ Порт 443 исключен (занят Docker)"
 
 echo "=== Получаем SSL сертификат от Let's Encrypt ==="
 # Проверяем, существует ли уже сертификат
@@ -188,7 +191,7 @@ else
     echo "✅ Сертификат для ${DOMAIN} уже существует"
 fi
 
-# Создаём HTTPS конфиг на порту 8443
+# Создаём HTTPS конфиг на порту 443
 if [ -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
     echo "=== Создаём HTTPS конфигурацию ==="
     VHOST_SSL_FILE="/etc/apache2/sites-available/power_site-ssl.conf"
