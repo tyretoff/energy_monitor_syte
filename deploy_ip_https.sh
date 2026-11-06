@@ -134,6 +134,9 @@ sudo bash -c "cat > $VHOST_FILE" <<EOL
     RewriteEngine On
     RewriteCond %{HTTPS} off
     RewriteCond %{HTTP_HOST} ^(www\.)?${DOMAIN}\$ [NC]
+    # Исключения для Telegram BotBroker (разрешаем чистый HTTP для ESP32)
+    RewriteCond %{REQUEST_URI} !^/broker\.php [NC]
+    RewriteCond %{REQUEST_URI} !^/bot [NC]
     RewriteRule ^(.*)\$ https://%{HTTP_HOST}\$1 [R=301,L]
 </VirtualHost>
 
