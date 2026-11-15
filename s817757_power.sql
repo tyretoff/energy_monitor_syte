@@ -38,7 +38,11 @@ CREATE TABLE `t_power3` (
   `P` decimal(6,2) NOT NULL,
   `cos1` decimal(3,2) NOT NULL,
   `cos2` decimal(3,2) NOT NULL,
-  `cos3` decimal(3,2) NOT NULL
+  `cos3` decimal(3,2) NOT NULL,
+  `energy` decimal(10,2) DEFAULT NULL,
+  `energy_t1` decimal(10,2) DEFAULT NULL,
+  `energy_t2` decimal(10,2) DEFAULT NULL,
+  `energy_t3` decimal(10,2) DEFAULT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --

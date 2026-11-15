@@ -213,6 +213,7 @@ if ($responseContentType) {
 }
 
 if ($httpMethod !== 'HEAD') {
+    header('Content-Length: ' . strlen($response));
     echo $response;
 }
 

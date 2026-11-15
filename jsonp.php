@@ -28,6 +28,37 @@ if ($mysqli->connect_error) {
 }
 
 
+// Проверка наличия столбцов энергии для обратной совместимости
+$hasEnergyColumns = false;
+$check = $mysqli->query("SHOW COLUMNS FROM `t_power3` LIKE 'energy'");
+if ($check && $check->num_rows > 0) {
+    $hasEnergyColumns = true;
+}
+
+$cols = $hasEnergyColumns
+    ? "`datetime`, `voltage1`, `voltage2`, `voltage3`, `current1`, `current2`, `current3`, `P`, `energy`, `energy_t1`, `energy_t2`, `energy_t3`"
+    : "`datetime`, `voltage1`, `voltage2`, `voltage3`, `current1`, `current2`, `current3`, `P`";
+
+function formatRecord($record, $hasEnergy) {
+    $row = array(
+        strtotime($record[0]),
+        (float)$record[1],
+        (float)$record[2],
+        (float)$record[3],
+        (float)$record[4],
+        (float)$record[5],
+        (float)$record[6],
+        (float)$record[7]
+    );
+    if ($hasEnergy) {
+        $row[] = ($record[8] !== null) ? (float)$record[8] : null;
+        $row[] = ($record[9] !== null) ? (float)$record[9] : null;
+        $row[] = ($record[10] !== null) ? (float)$record[10] : null;
+        $row[] = ($record[11] !== null) ? (float)$record[11] : null;
+    }
+    return $row;
+}
+
 // Получение диапазона дат из параметров запроса
 $start = isset($_GET['start']) ? intval($_GET['start']) : null;
 $end = isset($_GET['end']) ? intval($_GET['end']) : null;
@@ -36,17 +67,17 @@ $range = isset($_GET['range']) ? $_GET['range'] : null;
 
 if ($range === 'all') {
     // Загружаем все данные
-    $stmt = $mysqli->prepare("SELECT `datetime`, `voltage1`, `voltage2`, `voltage3`, `current1`, `current2`, `current3`, `P` FROM `t_power3` ORDER BY `datetime` ASC");
+    $stmt = $mysqli->prepare("SELECT $cols FROM `t_power3` ORDER BY `datetime` ASC");
 } elseif ($start && $end) {
     // Преобразование Unix timestamp в MySQL datetime формат
     $startDate = date('Y-m-d H:i:s', $start);
     $endDate = date('Y-m-d H:i:s', $end);
-    $stmt = $mysqli->prepare("SELECT `datetime`, `voltage1`, `voltage2`, `voltage3`, `current1`, `current2`, `current3`, `P` FROM `t_power3` WHERE `datetime` BETWEEN ? AND ? ORDER BY `datetime` ASC");
+    $stmt = $mysqli->prepare("SELECT $cols FROM `t_power3` WHERE `datetime` BETWEEN ? AND ? ORDER BY `datetime` ASC");
     $stmt->bind_param("ss", $startDate, $endDate);
 } else {
     // По умолчанию - пытаемся загрузить данные за последние сутки
     $startDate = date('Y-m-d H:i:s', strtotime('-1 day'));
-    $stmt = $mysqli->prepare("SELECT `datetime`, `voltage1`, `voltage2`, `voltage3`, `current1`, `current2`, `current3`, `P` FROM `t_power3` WHERE `datetime` >= ? ORDER BY `datetime` ASC");
+    $stmt = $mysqli->prepare("SELECT $cols FROM `t_power3` WHERE `datetime` >= ? ORDER BY `datetime` ASC");
     $stmt->bind_param("s", $startDate);
 }
 
@@ -57,7 +88,7 @@ $result = $stmt->get_result();
 if ($result->num_rows === 0 && !$start && !$end && $range !== 'all') {
     $stmt->close();
     // Загружаем последние 10000 записей (или все, если их меньше)
-    $stmt = $mysqli->prepare("SELECT `datetime`, `voltage1`, `voltage2`, `voltage3`, `current1`, `current2`, `current3`, `P` FROM `t_power3` ORDER BY `datetime` DESC LIMIT 10000");
+    $stmt = $mysqli->prepare("SELECT $cols FROM `t_power3` ORDER BY `datetime` DESC LIMIT 10000");
     $stmt->execute();
     $result = $stmt->get_result();
     
@@ -71,7 +102,7 @@ if ($result->num_rows === 0 && !$start && !$end && $range !== 'all') {
     // Формируем результат
     $all = [];
     foreach ($tempData as $record) {
-        $all[] = array(strtotime($record[0]), (float)$record[1], (float)$record[2], (float)$record[3], (float)$record[4], (float)$record[5], (float)$record[6], (float)$record[7]);
+        $all[] = formatRecord($record, $hasEnergyColumns);
     }
     
     // Добавляем метаданные о том, что это последние доступные данные
@@ -91,7 +122,7 @@ if ($result->num_rows === 0 && !$start && !$end && $range !== 'all') {
 
 $all = [];
 while ($record = $result->fetch_row()){
-    $all[] =  array(strtotime($record[0]), (float)$record[1], (float)$record[2], (float)$record[3], (float)$record[4], (float)$record[5], (float)$record[6], (float)$record[7]);
+    $all[] = formatRecord($record, $hasEnergyColumns);
 }
 
 // Конвертируем данные в JSON формат и выводим их

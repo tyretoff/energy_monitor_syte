@@ -52,22 +52,32 @@ $p7 = isset($_GET['p7']) ? $_GET['p7'] : null;
 $p8 = isset($_GET['p8']) ? $_GET['p8'] : null;
 $p9 = isset($_GET['p9']) ? $_GET['p9'] : null;
 $p10 = isset($_GET['p10']) ? $_GET['p10'] : null;
+$p11 = isset($_GET['p11']) ? $_GET['p11'] : null; // energy (A+, кВт*ч)
+$p12 = isset($_GET['p12']) ? $_GET['p12'] : null; // energy_t1
+$p13 = isset($_GET['p13']) ? $_GET['p13'] : null; // energy_t2
+$p14 = isset($_GET['p14']) ? $_GET['p14'] : null; // energy_t3
 
 // Подготовка SQL-запроса для вставки данных
-$query = "INSERT INTO t_power3 (datetime, voltage1, voltage2, voltage3, current1, current2, current3, P, cos1, cos2, cos3) VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+// Сначала пробуем расширенный запрос со столбцами энергии
+$query = "INSERT INTO t_power3 (datetime, voltage1, voltage2, voltage3, current1, current2, current3, P, cos1, cos2, cos3, energy, energy_t1, energy_t2, energy_t3) VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 $stmt = $mysqli->prepare($query);
 
-// Проверка успешности подготовки запроса
+// Fallback: если в таблице еще старая структура без колонок energy, пишем первые 10 параметров
 if ($stmt === false) {
-    die("Prepare failed: " . $mysqli->error);
+    $fallbackQuery = "INSERT INTO t_power3 (datetime, voltage1, voltage2, voltage3, current1, current2, current3, P, cos1, cos2, cos3) VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $stmt = $mysqli->prepare($fallbackQuery);
+    if ($stmt === false) {
+        die("Prepare failed: " . $mysqli->error);
+    }
+    $stmt->bind_param("dddddddddd", $p1, $p2, $p3, $p4, $p5, $p6, $p7, $p8, $p9, $p10);
+} else {
+    // Связывание всех 14 параметров с запросом
+    $stmt->bind_param("dddddddddddddd", $p1, $p2, $p3, $p4, $p5, $p6, $p7, $p8, $p9, $p10, $p11, $p12, $p13, $p14);
 }
-
-// Связывание параметров с запросом
-$stmt->bind_param("dddddddddd", $p1, $p2, $p3, $p4, $p5, $p6, $p7, $p8, $p9, $p10);
 
 // Выполнение запроса
 if ($stmt->execute()) {
-    echo "Data inserted successfully";
+    echo "Data inserted successfully TIME:" . (time() + 10800);
 } else {
     echo "Error inserting data: " . $stmt->error;
 }
