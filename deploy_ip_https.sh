@@ -109,13 +109,11 @@ else
 fi
 
 echo "=== Проверяем и обновляем структуру таблицы (миграция колонок энергии) ==="
-sudo mysql ${DB_NAME} -e "
-  ALTER TABLE t_power3 
-    ADD COLUMN IF NOT EXISTS energy decimal(10,2) DEFAULT NULL,
-    ADD COLUMN IF NOT EXISTS energy_t1 decimal(10,2) DEFAULT NULL,
-    ADD COLUMN IF NOT EXISTS energy_t2 decimal(10,2) DEFAULT NULL,
-    ADD COLUMN IF NOT EXISTS energy_t3 decimal(10,2) DEFAULT NULL;
-" 2>/dev/null || echo "ℹ️ Проверка структуры t_power3 завершена"
+sudo mysql ${DB_NAME} -e "ALTER TABLE t_power3 ADD COLUMN energy decimal(10,2) DEFAULT NULL;" 2>/dev/null || true
+sudo mysql ${DB_NAME} -e "ALTER TABLE t_power3 ADD COLUMN energy_t1 decimal(10,2) DEFAULT NULL;" 2>/dev/null || true
+sudo mysql ${DB_NAME} -e "ALTER TABLE t_power3 ADD COLUMN energy_t2 decimal(10,2) DEFAULT NULL;" 2>/dev/null || true
+sudo mysql ${DB_NAME} -e "ALTER TABLE t_power3 ADD COLUMN energy_t3 decimal(10,2) DEFAULT NULL;" 2>/dev/null || true
+echo "ℹ️ Проверка структуры t_power3 завершена"
 
 echo "=== Проверяем и настраиваем Apache (HTTP) ==="
 VHOST_FILE="/etc/apache2/sites-available/power_site.conf"
