@@ -432,8 +432,14 @@
         </div>
     </div>
 
+    <div id="container2"></div>
+    <center>
+        <button id="exportCSV">Экспорт данных в Excel</button>
+        <button id="exportToCSV">Экспорт данных в .CSV</button>
+    </center>
+
     <!-- Блок учета электроэнергии по тарифам (привязан к диапазону графика) -->
-    <div id="tariffCard" style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+    <div id="tariffCard" style="background: white; padding: 20px; border-radius: 8px; margin-top: 25px; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
             <h3 style="margin: 0; color: #2c3e50; font-size: 18px;">⚡ Расход электроэнергии за выбранный период</h3>
             <div style="font-size: 13px; color: #7f8c8d;" id="tariffPeriodLabel">Период: -</div>
@@ -443,17 +449,14 @@
             <div class="data-item" style="background: #fff8e1; border: 1px solid #ffe082;">
                 <div class="data-label" style="color: #f57f17; font-weight: 600;">☀️ Т1 День (07:00–23:00)</div>
                 <div class="data-value" id="energyT1Val" style="color: #e65100;">0.00 <span style="font-size: 13px;">кВт·ч</span></div>
-                <div class="stats-inline" id="costT1Val" style="color: #6d4c41;">0.00 руб.</div>
             </div>
             <div class="data-item" style="background: #e8eaf6; border: 1px solid #c5cae9;">
                 <div class="data-label" style="color: #283593; font-weight: 600;">🌙 Т2 Ночь (23:00–07:00)</div>
                 <div class="data-value" id="energyT2Val" style="color: #1a237e;">0.00 <span style="font-size: 13px;">кВт·ч</span></div>
-                <div class="stats-inline" id="costT2Val" style="color: #455a64;">0.00 руб.</div>
             </div>
             <div class="data-item" style="background: #e8f5e9; border: 1px solid #a5d6a7;">
                 <div class="data-label" style="color: #2e7d32; font-weight: 600;">⚡ Суммарный расход</div>
                 <div class="data-value" id="energyTotalVal" style="color: #1b5e20;">0.00 <span style="font-size: 13px;">кВт·ч</span></div>
-                <div class="stats-inline" id="costTotalVal" style="font-weight: 600; color: #2e7d32;">0.00 руб.</div>
             </div>
             <div class="data-item" style="background: #f3e5f5; border: 1px solid #e1bee7;">
                 <div class="data-label" style="color: #6a1b9a; font-weight: 600;">📋 Показания для Мосэнергосбыта</div>
@@ -465,12 +468,6 @@
             </div>
         </div>
     </div>
-
-    <div id="container2"></div>
-    <center>
-        <button id="exportCSV">Экспорт данных в Excel</button>
-        <button id="exportToCSV">Экспорт данных в .CSV</button>
-    </center>
 
     <script src="CD_/jquery-3.7.1.js"></script>
     <script src="CD_/highstock.js"></script>
@@ -569,9 +566,6 @@
             document.getElementById('maxPower').textContent = stats.power.max.toFixed(1);
 
             // ==================== Расчет энергии и тарифов (Московская область) ====================
-            var RATE_T1 = 6.73; // Т1 День (руб/кВт·ч)
-            var RATE_T2 = 3.02; // Т2 Ночь (руб/кВт·ч)
-
             // Отображение выбранного периода
             if (document.getElementById('tariffPeriodLabel')) {
                 var dFrom = new Date(min);
@@ -628,10 +622,6 @@
                 dE_Total = dE_T1 + dE_T2;
             }
 
-            var costT1 = dE_T1 * RATE_T1;
-            var costT2 = dE_T2 * RATE_T2;
-            var costTotal = costT1 + costT2;
-
             if (document.getElementById('energyT1Val')) {
                 document.getElementById('energyT1Val').innerHTML = dE_T1.toFixed(2) + ' <span style="font-size:13px">кВт·ч</span>';
             }
@@ -640,16 +630,6 @@
             }
             if (document.getElementById('energyTotalVal')) {
                 document.getElementById('energyTotalVal').innerHTML = dE_Total.toFixed(2) + ' <span style="font-size:13px">кВт·ч</span>';
-            }
-
-            if (document.getElementById('costT1Val')) {
-                document.getElementById('costT1Val').textContent = costT1.toFixed(2) + ' руб. (по ' + RATE_T1 + ' ₽)';
-            }
-            if (document.getElementById('costT2Val')) {
-                document.getElementById('costT2Val').textContent = costT2.toFixed(2) + ' руб. (по ' + RATE_T2 + ' ₽)';
-            }
-            if (document.getElementById('costTotalVal')) {
-                document.getElementById('costTotalVal').textContent = 'Итого: ' + costTotal.toFixed(2) + ' руб.';
             }
 
             // Показания нарастающим итогом для Мосэнергосбыта на конец периода
