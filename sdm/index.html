@@ -1,0 +1,1325 @@
+<!DOCTYPE HTML>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="/icon-192x192.png">
+    <meta name="theme-color" content="#2196f3">
+    <link rel="manifest" href="/manifest.json">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Language" content="ru">
+    <title>Мониторинг SDM01</title>
+    <script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("/service-worker.js")
+                    .then(registration => {
+                        console.log("Service Worker зарегистрирован: ", registration);
+                    })
+                    .catch(error => {
+                        console.log("Ошибка регистрации Service Worker: ", error);
+                    });
+            });
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            margin: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+        }
+
+        #header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        #header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        @media (max-width: 768px) {
+            #header h1 {
+                font-size: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #header h1 {
+                font-size: 18px;
+            }
+        }
+
+        #latestData {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 15px;
+        }
+
+        .data-item {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .time-item {
+            grid-column: 1 / -1;
+            background: #e9ecef;
+            margin-bottom: 10px;
+        }
+
+        .time-item .data-label {
+            font-size: 14px;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+
+        .time-item .data-value {
+            font-size: 16px;
+            color: #2c3e50;
+        }
+
+        .data-label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+
+        .data-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        #dataWarning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        #dataWarning.show {
+            display: block;
+        }
+
+        #dataWarning .warning-title {
+            font-weight: 600;
+            color: #856404;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+
+        #dataWarning .warning-message {
+            color: #856404;
+            font-size: 14px;
+        }
+
+        #dataWarning .warning-date {
+            font-weight: 600;
+            color: #d39e00;
+        }
+
+        #container2 {
+            height: 700px;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        #exportCSV, #exportToCSV {
+            margin-top: 20px;
+            padding: 10px 25px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-right: 10px;
+        }
+
+        #exportCSV:hover, #exportToCSV:hover {
+            background: #2980b9;
+        }
+
+        .highcharts-container {
+            background-color: #f9f9f9 !important;
+        }
+
+        #statsContainer {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .stats-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 15px;
+        }
+
+        .stats-section {
+            margin-bottom: 20px;
+        }
+
+        .stats-inline {
+            font-size: 12px;
+            margin-top: 2px;
+            color: #6c757d;
+        }
+
+        .min-value {
+            color: #e74c3c;
+        }
+
+        .max-value {
+            color: #27ae60;
+        }
+
+        /* Оптимизация для мобильных устройств */
+        @media (max-width: 768px) {
+            body {
+                margin: 10px;
+            }
+            
+            #container2 {
+                padding: 10px;
+                height: 600px;
+            }
+            
+            /* Уменьшаем левый отступ на мобильных устройствах */
+            .highcharts-container svg {
+                overflow: visible !important;
+            }
+            
+            .highcharts-container .highcharts-root {
+                overflow: visible !important;
+            }
+            
+            /* Скрываем вертикальные оси в мобильной версии */
+            .highcharts-yaxis .highcharts-axis-line,
+            .highcharts-yaxis .highcharts-tick {
+                display: none;
+            }
+            
+            /* Настройки для графика на мобильных устройствах */
+            .highcharts-plot-band, .highcharts-plot-line, .highcharts-yaxis, .highcharts-grid {
+                transform: translateX(-10px);
+            }
+            
+            /* Настройки сетки для мобильных устройств */
+            .highcharts-grid-line {
+                stroke-opacity: 0.3;
+            }
+            
+            /* Настройки для меток осей */
+            .highcharts-yaxis-labels {
+                opacity: 0.8;
+            }
+            
+            .highcharts-axis-title {
+                font-size: 14px !important;
+                font-weight: bold !important;
+            }
+            
+            /* Оптимизация осей для мобильных устройств */
+            .highcharts-yaxis-labels text {
+                font-size: 10px !important;
+            }
+            
+            .highcharts-yaxis .highcharts-axis-line {
+                stroke-width: 1;
+            }
+            
+            .highcharts-legend-item text {
+                font-size: 11px !important;
+            }
+            
+            #latestData {
+                grid-template-columns: repeat(3, 1fr);
+                padding: 10px;
+                gap: 5px;
+            }
+            
+            .data-item {
+                padding: 5px;
+            }
+            
+            .data-value {
+                font-size: 14px;
+            }
+
+            .data-label {
+                font-size: 10px;
+            }
+
+            .time-item {
+                grid-column: 1 / -1;
+                margin-bottom: 5px;
+            }
+
+            .power-item {
+                grid-column: 1 / -1;
+                margin-top: 5px;
+            }
+        }
+        
+        /* Дополнительная оптимизация для очень маленьких экранов */
+        @media (max-width: 480px) {
+            body {
+                margin: 5px;
+            }
+            
+            #container2 {
+                padding: 5px;
+                height: 550px;
+            }
+            
+            /* Дополнительная оптимизация отступов для маленьких экранов */
+            .highcharts-plot-band, .highcharts-plot-line, .highcharts-yaxis, .highcharts-grid {
+                transform: translateX(-15px);
+            }
+            
+            /* Полностью скрываем вертикальные линии сетки */
+            .highcharts-grid-line {
+                stroke-opacity: 0.2;
+            }
+            
+            /* Уменьшаем количество меток на осях */
+            .highcharts-yaxis-labels text:nth-child(odd) {
+                opacity: 0.5;
+            }
+            
+            .highcharts-axis-title {
+                font-size: 12px !important;
+            }
+            
+            /* Оптимизация кнопок выбора диапазона */
+            .highcharts-range-selector-buttons {
+                transform: scale(0.95);
+                transform-origin: left top;
+            }
+            
+            #latestData {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+                gap: 5px;
+                padding: 5px;
+            }
+            
+            .data-item {
+                padding: 5px;
+            }
+            
+            .data-value {
+                font-size: 14px;
+            }
+            
+            .data-label {
+                font-size: 10px;
+            }
+            
+            .stats-inline {
+                font-size: 9px;
+            }
+            
+            #header h1 {
+                font-size: 18px !important;
+            }
+            
+            #header p {
+                font-size: 12px !important;
+            }
+            
+            .highcharts-yaxis-labels text {
+                font-size: 9px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1 style="margin: 0;">Мониторинг SDM01</h1>
+    </div>
+
+    <div id="dataWarning">
+        <div class="warning-title">⚠️ Внимание</div>
+        <div class="warning-message">
+            Данные за последние сутки отсутствуют. Отображаются последние доступные данные.<br>
+            Последнее обновление: <span class="warning-date" id="lastDataDate">-</span>
+        </div>
+    </div>
+
+    <div id="latestData">
+        <div class="data-item time-item">
+            <div class="data-label">Последние показания контроллера</div>
+            <div class="data-value" id="latestTime">-</div>
+        </div>
+        <div class="data-item">
+            <div class="data-label">Напряжение U1</div>
+            <div class="data-value" id="latestVoltage1">-</div>
+            <div class="stats-inline">
+                <span class="max-value" id="maxVoltage1">-</span>/<span class="min-value" id="minVoltage1">-</span>
+            </div>
+        </div>
+        <div class="data-item">
+            <div class="data-label">Напряжение U2</div>
+            <div class="data-value" id="latestVoltage2">-</div>
+            <div class="stats-inline">
+                <span class="max-value" id="maxVoltage2">-</span>/<span class="min-value" id="minVoltage2">-</span>
+            </div>
+        </div>
+        <div class="data-item">
+            <div class="data-label">Напряжение U3</div>
+            <div class="data-value" id="latestVoltage3">-</div>
+            <div class="stats-inline">
+                <span class="max-value" id="maxVoltage3">-</span>/<span class="min-value" id="minVoltage3">-</span>
+            </div>
+        </div>
+        <div class="data-item">
+            <div class="data-label">Ток I1</div>
+            <div class="data-value" id="latestCurrent1">-</div>
+            <div class="stats-inline">
+                <span class="max-value" id="maxCurrent1">-</span>/<span class="min-value" id="minCurrent1">-</span>
+            </div>
+        </div>
+        <div class="data-item">
+            <div class="data-label">Ток I2</div>
+            <div class="data-value" id="latestCurrent2">-</div>
+            <div class="stats-inline">
+                <span class="max-value" id="maxCurrent2">-</span>/<span class="min-value" id="minCurrent2">-</span>
+            </div>
+        </div>
+        <div class="data-item">
+            <div class="data-label">Ток I3</div>
+            <div class="data-value" id="latestCurrent3">-</div>
+            <div class="stats-inline">
+                <span class="max-value" id="maxCurrent3">-</span>/<span class="min-value" id="minCurrent3">-</span>
+            </div>
+        </div>
+        <div class="data-item power-item">
+            <div class="data-label">Мощность P</div>
+            <div class="data-value" id="latestPower">-</div>
+            <div class="stats-inline">
+                <span class="max-value" id="maxPower">-</span>/<span class="min-value" id="minPower">-</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="container2"></div>
+    <center>
+        <button id="exportCSV">Экспорт данных в Excel</button>
+        <button id="exportToCSV">Экспорт данных в .CSV</button>
+    </center>
+
+    <!-- Блок учета электроэнергии по тарифам (привязан к диапазону графика) -->
+    <div id="tariffCard" style="background: white; padding: 20px; border-radius: 8px; margin-top: 25px; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+            <h3 style="margin: 0; color: #2c3e50; font-size: 18px;">⚡ Расход электроэнергии за выбранный период</h3>
+            <div style="font-size: 13px; color: #7f8c8d;" id="tariffPeriodLabel">Период: -</div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; text-align: center;">
+            <div class="data-item" style="background: #fff8e1; border: 1px solid #ffe082;">
+                <div class="data-label" style="color: #f57f17; font-weight: 600;">☀️ Т1 День (07:00–23:00)</div>
+                <div class="data-value" id="energyT1Val" style="color: #e65100;">0.00 <span style="font-size: 13px;">кВт·ч</span></div>
+            </div>
+            <div class="data-item" style="background: #e8eaf6; border: 1px solid #c5cae9;">
+                <div class="data-label" style="color: #283593; font-weight: 600;">🌙 Т2 Ночь (23:00–07:00)</div>
+                <div class="data-value" id="energyT2Val" style="color: #1a237e;">0.00 <span style="font-size: 13px;">кВт·ч</span></div>
+            </div>
+            <div class="data-item" style="background: #e8f5e9; border: 1px solid #a5d6a7;">
+                <div class="data-label" style="color: #2e7d32; font-weight: 600;">⚡ Суммарный расход</div>
+                <div class="data-value" id="energyTotalVal" style="color: #1b5e20;">0.00 <span style="font-size: 13px;">кВт·ч</span></div>
+            </div>
+            <div class="data-item" style="background: #f3e5f5; border: 1px solid #e1bee7;">
+                <div class="data-label" style="color: #6a1b9a; font-weight: 600;">📋 Показания для Мосэнергосбыта</div>
+                <div style="font-size: 13px; text-align: left; padding: 4px 10px; color: #4a148c;" id="meterReadingsBox">
+                    <div><b>Т1:</b> <span id="meterT1">-</span> кВт·ч</div>
+                    <div><b>Т2:</b> <span id="meterT2">-</span> кВт·ч</div>
+                    <div><b>A+:</b> <span id="meterTotal">-</span> кВт·ч</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../CD_/jquery-3.7.1.js"></script>
+    <script src="../CD_/highstock.js"></script>
+    <script src="../CD_/boost.js"></script>
+    <script src="../CD_/grid-light.js"></script>
+    <script src="../CD_/exporting.js"></script>
+    <script>
+        Highcharts.setOptions({
+            lang: {
+                loading: 'Загрузка...',
+                months: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 
+                        'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
+                weekdays: ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 
+                          'Четверг', 'Пятница', 'Суббота'],
+                shortMonths: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 
+                             'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'],
+                exportButtonTitle: "Экспорт",
+                printButtonTitle: "Печать",
+                rangeSelectorFrom: "С",
+                rangeSelectorTo: "По",
+                rangeSelectorZoom: "Период",
+                downloadPNG: 'Скачать PNG',
+                downloadJPEG: 'Скачать JPEG',
+                downloadPDF: 'Скачать PDF',
+                downloadSVG: 'Скачать SVG',
+                printChart: 'Напечатать график',
+                resetZoom: "Сбросить масштаб",
+                resetZoomTitle: "Сбросить масштаб 1:1",
+                contextButtonTitle: "Контекстное меню",
+                decimalPoint: ',',
+                thousandsSep: ' '
+            },
+            accessibility: {
+                enabled: false
+            }
+        });
+
+        // Функция для обновления статистики
+        function updateStats(data, min, max) {
+            var filteredData = data.filter(function(point) {
+                return point[0] * 1000 >= min && point[0] * 1000 <= max;
+            });
+            
+            if (filteredData.length === 0) return;
+            
+            // Инициализация минимальных и максимальных значений
+            var stats = {
+                voltage1: { min: Infinity, max: -Infinity },
+                voltage2: { min: Infinity, max: -Infinity },
+                voltage3: { min: Infinity, max: -Infinity },
+                current1: { min: Infinity, max: -Infinity },
+                current2: { min: Infinity, max: -Infinity },
+                current3: { min: Infinity, max: -Infinity },
+                power: { min: Infinity, max: -Infinity }
+            };
+            
+            // Поиск минимальных и максимальных значений
+            filteredData.forEach(function(point) {
+                // Напряжение
+                stats.voltage1.min = Math.min(stats.voltage1.min, point[1]);
+                stats.voltage1.max = Math.max(stats.voltage1.max, point[1]);
+                stats.voltage2.min = Math.min(stats.voltage2.min, point[2]);
+                stats.voltage2.max = Math.max(stats.voltage2.max, point[2]);
+                stats.voltage3.min = Math.min(stats.voltage3.min, point[3]);
+                stats.voltage3.max = Math.max(stats.voltage3.max, point[3]);
+                
+                // Ток
+                stats.current1.min = Math.min(stats.current1.min, point[4]);
+                stats.current1.max = Math.max(stats.current1.max, point[4]);
+                stats.current2.min = Math.min(stats.current2.min, point[5]);
+                stats.current2.max = Math.max(stats.current2.max, point[5]);
+                stats.current3.min = Math.min(stats.current3.min, point[6]);
+                stats.current3.max = Math.max(stats.current3.max, point[6]);
+                
+                // Мощность
+                stats.power.min = Math.min(stats.power.min, point[7]);
+                stats.power.max = Math.max(stats.power.max, point[7]);
+            });
+            
+            // Обновление элементов интерфейса
+            document.getElementById('minVoltage1').textContent = stats.voltage1.min.toFixed(1);
+            document.getElementById('maxVoltage1').textContent = stats.voltage1.max.toFixed(1);
+            document.getElementById('minVoltage2').textContent = stats.voltage2.min.toFixed(1);
+            document.getElementById('maxVoltage2').textContent = stats.voltage2.max.toFixed(1);
+            document.getElementById('minVoltage3').textContent = stats.voltage3.min.toFixed(1);
+            document.getElementById('maxVoltage3').textContent = stats.voltage3.max.toFixed(1);
+            
+            document.getElementById('minCurrent1').textContent = stats.current1.min.toFixed(1);
+            document.getElementById('maxCurrent1').textContent = stats.current1.max.toFixed(1);
+            document.getElementById('minCurrent2').textContent = stats.current2.min.toFixed(1);
+            document.getElementById('maxCurrent2').textContent = stats.current2.max.toFixed(1);
+            document.getElementById('minCurrent3').textContent = stats.current3.min.toFixed(1);
+            document.getElementById('maxCurrent3').textContent = stats.current3.max.toFixed(1);
+            
+            document.getElementById('minPower').textContent = stats.power.min.toFixed(1);
+            document.getElementById('maxPower').textContent = stats.power.max.toFixed(1);
+
+            // ==================== Расчет энергии и тарифов (Московская область) ====================
+            // Отображение выбранного периода
+            if (document.getElementById('tariffPeriodLabel')) {
+                var dFrom = new Date(min);
+                var dTo = new Date(max);
+                var fmt = function(d) {
+                    return ('0' + d.getUTCDate()).slice(-2) + '.' + 
+                           ('0' + (d.getUTCMonth() + 1)).slice(-2) + '.' + 
+                           d.getUTCFullYear() + ' ' + 
+                           ('0' + d.getUTCHours()).slice(-2) + ':' + 
+                           ('0' + d.getUTCMinutes()).slice(-2);
+                };
+                document.getElementById('tariffPeriodLabel').textContent = 'Период: ' + fmt(dFrom) + ' — ' + fmt(dTo);
+            }
+
+            var firstPt = filteredData[0];
+            var lastPt = filteredData[filteredData.length - 1];
+
+            // Проверяем, есть ли прямые показания счетчика (колонки 8..10)
+            var hasDirectMeterData = (firstPt && firstPt.length >= 11 && 
+                                      firstPt[9] !== null && lastPt[9] !== null && 
+                                      lastPt[9] >= firstPt[9]);
+
+            var dE_T1 = 0;
+            var dE_T2 = 0;
+            var dE_Total = 0;
+
+            if (hasDirectMeterData) {
+                // Прямой расчет по показаниям со счетчика
+                dE_T1 = Math.max(0, lastPt[9] - firstPt[9]);
+                dE_T2 = Math.max(0, lastPt[10] - firstPt[10]);
+                if (lastPt[8] !== null && firstPt[8] !== null && lastPt[8] >= firstPt[8]) {
+                    dE_Total = lastPt[8] - firstPt[8];
+                } else {
+                    dE_Total = dE_T1 + dE_T2;
+                }
+            } else {
+                // Гибридный режим: численное интегрирование мощности P по времени (трапеции)
+                for (var k = 0; k < filteredData.length - 1; k++) {
+                    var ptA = filteredData[k];
+                    var ptB = filteredData[k + 1];
+                    var dtHours = (ptB[0] - ptA[0]) / 3600.0;
+                    if (dtHours > 0 && dtHours < 1.0) { // Защита от пропусков измерений
+                        var avgP = (ptA[7] + ptB[7]) / 2.0;
+                        var dE = avgP * dtHours;
+                        var ptDate = new Date(ptA[0] * 1000);
+                        var h = ptDate.getUTCHours(); // timestamp в базе уже в местном времени MSK
+                        if (h >= 7 && h < 23) {
+                            dE_T1 += dE;
+                        } else {
+                            dE_T2 += dE;
+                        }
+                    }
+                }
+                dE_Total = dE_T1 + dE_T2;
+            }
+
+            if (document.getElementById('energyT1Val')) {
+                document.getElementById('energyT1Val').innerHTML = dE_T1.toFixed(2) + ' <span style="font-size:13px">кВт·ч</span>';
+            }
+            if (document.getElementById('energyT2Val')) {
+                document.getElementById('energyT2Val').innerHTML = dE_T2.toFixed(2) + ' <span style="font-size:13px">кВт·ч</span>';
+            }
+            if (document.getElementById('energyTotalVal')) {
+                document.getElementById('energyTotalVal').innerHTML = dE_Total.toFixed(2) + ' <span style="font-size:13px">кВт·ч</span>';
+            }
+
+            // Показания нарастающим итогом для Мосэнергосбыта на конец периода
+            if (lastPt) {
+                var elT1 = document.getElementById('meterT1');
+                var elT2 = document.getElementById('meterT2');
+                var elTot = document.getElementById('meterTotal');
+                if (elT1) elT1.textContent = (lastPt.length >= 10 && lastPt[9] !== null) ? lastPt[9].toFixed(2) + ' (целых: ' + Math.floor(lastPt[9]) + ')' : '-';
+                if (elT2) elT2.textContent = (lastPt.length >= 11 && lastPt[10] !== null) ? lastPt[10].toFixed(2) + ' (целых: ' + Math.floor(lastPt[10]) + ')' : '-';
+                if (elTot) elTot.textContent = (lastPt.length >= 9 && lastPt[8] !== null) ? lastPt[8].toFixed(2) + ' (целых: ' + Math.floor(lastPt[8]) + ')' : '-';
+            }
+        }
+
+        $.getJSON('jsonp.php', function (response) {
+            // Обработка нового формата ответа с fallback
+            var data, isFallback = false, fallbackMessage = '';
+            
+            if (response && response.data) {
+                // Новый формат с метаданными
+                data = response.data;
+                isFallback = response.fallback || false;
+                fallbackMessage = response.message || '';
+            } else if (Array.isArray(response)) {
+                // Старый формат (массив данных)
+                data = response;
+            } else {
+                data = [];
+            }
+            
+            if (!data || data.length === 0) {
+                console.error('Нет данных для отображения');
+                document.getElementById('header').innerHTML = '<h1 style="margin: 0;">Мониторинг SDM01</h1><p style="color: #e74c3c; margin-top: 10px;">❌ В базе данных нет записей. Ожидание данных от контроллера...</p>';
+                return;
+            }
+            
+            // Показываем предупреждение, если данные загружены через fallback
+            if (isFallback) {
+                var lastDataTimestamp = data[data.length - 1][0] * 1000;
+                var lastDataDate = new Date(lastDataTimestamp);
+                var now = new Date();
+                var hoursDiff = Math.floor((now - lastDataDate) / (1000 * 60 * 60));
+                
+                document.getElementById('lastDataDate').textContent = 
+                    Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', lastDataTimestamp) + 
+                    ' (' + (hoursDiff < 24 ? hoursDiff + ' ч. назад' : Math.floor(hoursDiff / 24) + ' дн. назад') + ')';
+                document.getElementById('dataWarning').classList.add('show');
+                console.warn('Fallback: ' + fallbackMessage);
+            }
+
+            var voltage1 = [], voltage2 = [], voltage3 = [],
+                current1 = [], current2 = [], current3 = [],
+                P = [], dataLength = data.length;
+
+            for (var i = 0; i < dataLength; i++) {
+                voltage1.push([data[i][0] * 1000, data[i][1]]);
+                voltage2.push([data[i][0] * 1000, data[i][2]]);
+                voltage3.push([data[i][0] * 1000, data[i][3]]);
+                current1.push([data[i][0] * 1000, data[i][4]]);
+                current2.push([data[i][0] * 1000, data[i][5]]);
+                current3.push([data[i][0] * 1000, data[i][6]]);
+                P.push([data[i][0] * 1000, data[i][7]]);
+            }
+
+            function updateLatestData(data) {
+                var latestIndex = data.length - 1;
+                document.getElementById('latestTime').textContent = 
+                    Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', data[latestIndex][0] * 1000);
+                document.getElementById('latestVoltage1').textContent = data[latestIndex][1].toFixed(1);
+                document.getElementById('latestVoltage2').textContent = data[latestIndex][2].toFixed(1);
+                document.getElementById('latestVoltage3').textContent = data[latestIndex][3].toFixed(1);
+                document.getElementById('latestCurrent1').textContent = data[latestIndex][4].toFixed(1);
+                document.getElementById('latestCurrent2').textContent = data[latestIndex][5].toFixed(1);
+                document.getElementById('latestCurrent3').textContent = data[latestIndex][6].toFixed(1);
+                document.getElementById('latestPower').textContent = data[latestIndex][7].toFixed(1);
+            }
+
+            // Обновляем последние данные при первой загрузке
+            updateLatestData(data);
+
+            // Функция для обновления всех данных
+            function updateAllData() {
+                $.getJSON('jsonp.php', function(response) {
+                    // Обработка нового формата ответа
+                    var newData;
+                    if (response && response.data) {
+                        newData = response.data;
+                        // Обновляем предупреждение, если данные через fallback
+                        if (response.fallback) {
+                            var lastDataTimestamp = newData[newData.length - 1][0] * 1000;
+                            var lastDataDate = new Date(lastDataTimestamp);
+                            var now = new Date();
+                            var hoursDiff = Math.floor((now - lastDataDate) / (1000 * 60 * 60));
+                            
+                            document.getElementById('lastDataDate').textContent = 
+                                Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', lastDataTimestamp) + 
+                                ' (' + (hoursDiff < 24 ? hoursDiff + ' ч. назад' : Math.floor(hoursDiff / 24) + ' дн. назад') + ')';
+                            document.getElementById('dataWarning').classList.add('show');
+                        } else {
+                            // Скрываем предупреждение, если данные актуальные
+                            document.getElementById('dataWarning').classList.remove('show');
+                        }
+                    } else if (Array.isArray(response)) {
+                        newData = response;
+                    } else {
+                        newData = [];
+                    }
+                    
+                    if (!newData || newData.length === 0) {
+                        console.error('Нет новых данных для обновления');
+                        return;
+                    }
+
+                    // Обновляем последние показания
+                    updateLatestData(newData);
+
+                    // Обновляем графики
+                    chart.series[0].setData(newData.map(item => [item[0] * 1000, item[1]]));
+                    chart.series[1].setData(newData.map(item => [item[0] * 1000, item[2]]));
+                    chart.series[2].setData(newData.map(item => [item[0] * 1000, item[3]]));
+                    chart.series[3].setData(newData.map(item => [item[0] * 1000, item[4]]));
+                    chart.series[4].setData(newData.map(item => [item[0] * 1000, item[5]]));
+                    chart.series[5].setData(newData.map(item => [item[0] * 1000, item[6]]));
+                    chart.series[6].setData(newData.map(item => [item[0] * 1000, item[7]]));
+
+                    // Обновляем статистику
+                    var extremes = chart.xAxis[0].getExtremes();
+                    updateStats(newData, extremes.min, extremes.max);
+                }).fail(function() {
+                    console.error('Ошибка обновления данных');
+                });
+            }
+
+            var updateIntervalId;
+
+            function resetUpdateTimer() {
+                if (updateIntervalId) {
+                    clearInterval(updateIntervalId);
+                }
+                updateIntervalId = setInterval(updateAllData, 120000);
+                console.log('Таймер автообновления сброшен. Следующее обновление через 120 секунд.');
+            }
+
+            // Запускаем таймер автообновления
+            resetUpdateTimer();
+
+            // --- Вспомогательные функции для загрузки данных в диаграмму ---
+            function updateChartWithData(chart, response, startMillis, endMillis) {
+                // Обработка нового формата ответа
+                var newData;
+                if (response && response.data) {
+                    newData = response.data;
+                    // Обновляем предупреждение, если данные через fallback
+                    if (response.fallback) {
+                        var lastDataTimestamp = newData[newData.length - 1][0] * 1000;
+                        var lastDataDate = new Date(lastDataTimestamp);
+                        var now = new Date();
+                        var hoursDiff = Math.floor((now - lastDataDate) / (1000 * 60 * 60));
+                        
+                        document.getElementById('lastDataDate').textContent = 
+                            Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', lastDataTimestamp) + 
+                            ' (' + (hoursDiff < 24 ? hoursDiff + ' ч. назад' : Math.floor(hoursDiff / 24) + ' дн. назад') + ')';
+                        document.getElementById('dataWarning').classList.add('show');
+                    } else {
+                        document.getElementById('dataWarning').classList.remove('show');
+                    }
+                } else if (Array.isArray(response)) {
+                    newData = response;
+                } else {
+                    newData = [];
+                }
+                
+                if (!newData || newData.length === 0) {
+                    console.error('Нет данных для отображения');
+                    alert('Ошибка: Нет данных для отображения');
+                    chart.hideLoading();
+                    return;
+                }
+                
+                console.log('Загружено ' + newData.length + ' точек данных.');
+                chart.allRawData = newData; // Сохраняем все данные
+
+                var voltage1 = [], voltage2 = [], voltage3 = [],
+                    current1 = [], current2 = [], current3 = [],
+                    power = [];
+
+                newData.forEach(function (point) {
+                    var t = point[0] * 1000;
+                    voltage1.push([t, point[1]]);
+                    voltage2.push([t, point[2]]);
+                    voltage3.push([t, point[3]]);
+                    current1.push([t, point[4]]);
+                    current2.push([t, point[5]]);
+                    current3.push([t, point[6]]);
+                    power.push([t, point[7]]);
+                });
+
+                chart.series[0].setData(voltage1, false);
+                chart.series[1].setData(voltage2, false);
+                chart.series[2].setData(voltage3, false);
+                chart.series[3].setData(current1, false);
+                chart.series[4].setData(current2, false);
+                chart.series[5].setData(current3, false);
+                chart.series[6].setData(power, false); // Отключаем перерисовку для всех серий
+
+                // Устанавливаем правильный масштаб и принудительно перерисовываем диаграмму
+                // Для кнопки 'Все' startMillis и endMillis будут undefined, и setExtremes сбросит масштаб
+                chart.xAxis[0].setExtremes(startMillis, endMillis, true);
+
+                chart.hideLoading();
+            }
+
+            function handleChartAjaxError(chart, jqXHR, textStatus, errorThrown) {
+                console.error('Ошибка загрузки данных. Статус: ' + textStatus + ', Ошибка: ' + errorThrown);
+                if (jqXHR.responseText) {
+                    console.error('Ответ сервера:', jqXHR.responseText);
+                }
+                alert('Ошибка подключения к серверу данных. Проверьте консоль разработчика (F12) для деталей.');
+                chart.hideLoading();
+            }
+            // --- Конец вспомогательных функций ---
+
+            var chart = Highcharts.stockChart('container2', {
+                chart: {
+                    spacingLeft: 10,
+                    spacingRight: 10,
+                    marginLeft: isMobileDevice() ? 25 : 50,
+                    marginRight: 15,
+                    events: {
+                        redraw: function() {
+                            resetUpdateTimer();
+                        }
+                    }
+                },
+                
+                            xAxis: {
+                events: {
+                    setExtremes: function (e) {
+                        // При ручном выборе диапазона сбрасываем флаг начальной загрузки
+                        if (e.trigger === 'rangeSelectorButton' || e.trigger === 'rangeSelectorInput') {
+                            this.chart.isInitialLoad = false;
+                        }
+                        // Обновляем статистику при любом изменении масштаба
+                        if (this.chart.allRawData) {
+                            updateStats(this.chart.allRawData, e.min, e.max);
+                        }
+                    }
+                }
+            },
+            rangeSelector: {
+                    selected: 1,
+                    inputEnabled: true,
+                    allButtonsEnabled: true,
+                    buttonTheme: {
+                        width: 32,
+                        height: 20,
+                        padding: 2
+                    },
+                    buttons: [{
+                        type: 'minute',
+                        count: 10,
+                        text: '10м'
+                    }, {
+                        type: 'hour',
+                        count: 1,
+                        text: '1час'
+                    }, {
+                        type: 'hour',
+                        count: 6,
+                        text: '6час'
+                    }, {
+                        type: 'day',
+                        count: 1,
+                        text: '1дн'
+                    }, {
+                        type: 'week',
+                        count: 1,
+                        text: 'нед',
+                        events: {
+                            click: function() {
+                                var chart = $('#container2').highcharts();
+                                chart.isInitialLoad = false;
+                                chart.showLoading('Загрузка данных за неделю...');
+                                var now = new Date();
+                                var endTimestamp = Math.floor(now.getTime() / 1000);
+                                var start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                                var startTimestamp = Math.floor(start.getTime() / 1000);
+                                $.getJSON(`jsonp.php?start=${startTimestamp}&end=${endTimestamp}`)
+                                    .done(function(newData) { updateChartWithData(chart, newData, startTimestamp * 1000, endTimestamp * 1000); })
+                                    .fail(function(jqXHR, textStatus, errorThrown) { handleChartAjaxError(chart, jqXHR, textStatus, errorThrown); });
+                                return false;
+                            }
+                        }
+                    }, {
+                        type: 'month',
+                        count: 1,
+                        text: 'мес',
+                        events: {
+                            click: function() {
+                                var chart = $('#container2').highcharts();
+                                chart.isInitialLoad = false;
+                                chart.showLoading('Загрузка данных за месяц...');
+                                var now = new Date();
+                                var endTimestamp = Math.floor(now.getTime() / 1000);
+                                var start = new Date();
+                                start.setMonth(start.getMonth() - 1);
+                                var startTimestamp = Math.floor(start.getTime() / 1000);
+                                $.getJSON(`jsonp.php?start=${startTimestamp}&end=${endTimestamp}`)
+                                    .done(function(newData) { updateChartWithData(chart, newData, startTimestamp * 1000, endTimestamp * 1000); })
+                                    .fail(function(jqXHR, textStatus, errorThrown) { handleChartAjaxError(chart, jqXHR, textStatus, errorThrown); });
+                                return false;
+                            }
+                        }
+                    }, {
+                        type: 'year',
+                        count: 1,
+                        text: 'год',
+                        events: {
+                            click: function() {
+                                var chart = $('#container2').highcharts();
+                                chart.isInitialLoad = false;
+                                chart.showLoading('Загрузка данных за год...');
+                                var now = new Date();
+                                var endTimestamp = Math.floor(now.getTime() / 1000);
+                                var start = new Date();
+                                start.setFullYear(start.getFullYear() - 1);
+                                var startTimestamp = Math.floor(start.getTime() / 1000);
+                                $.getJSON(`jsonp.php?start=${startTimestamp}&end=${endTimestamp}`)
+                                    .done(function(newData) { updateChartWithData(chart, newData, startTimestamp * 1000, endTimestamp * 1000); })
+                                    .fail(function(jqXHR, textStatus, errorThrown) { handleChartAjaxError(chart, jqXHR, textStatus, errorThrown); });
+                                return false;
+                            }
+                        }
+                    }, {
+                        type: 'all',
+                        text: 'Всё',
+                        events: {
+                            click: function() {
+                                var chart = $('#container2').highcharts();
+                                chart.isInitialLoad = false;
+                                chart.showLoading('Загрузка всех данных...');
+                                $.getJSON('jsonp.php?range=all')
+                                    .done(function(newData) { updateChartWithData(chart, newData); }) // Для 'all' масштаб не задаем, он будет автоматическим
+                                    .fail(function(jqXHR, textStatus, errorThrown) { handleChartAjaxError(chart, jqXHR, textStatus, errorThrown); });
+                                return false;
+                            }
+                        }
+                    }]
+                },
+                
+
+
+                legend: {
+                    enabled: true,
+                    layout: 'horizontal',
+                    align: 'center',
+                    verticalAlign: 'bottom',
+                    itemStyle: {
+                        color: '#333',
+                        fontSize: '15.6px'
+                    },
+                    itemHoverStyle: {
+                        color: '#2980b9'
+                    },
+                    itemDistance: 10,
+                    symbolHeight: 10,
+                    symbolWidth: 10,
+                    symbolRadius: 5
+                },
+
+                yAxis: [{
+                    title: { 
+                        text: 'U',
+                        align: 'middle',
+                        rotation: 0,
+                        offset: 0,
+                        y: -15,
+                        x: -35
+                    },
+                    height: '40%',
+                    resize: { enabled: true },
+                    labels: {
+                        align: 'right',
+                        x: -8,
+                        y: 3,
+                        style: {
+                            color: '#666'
+                        }
+                    },
+                    offset: 0,
+                    maxPadding: 0.05,
+                    lineWidth: isMobileDevice() ? 0 : 1,
+                    gridLineWidth: isMobileDevice() ? 0.5 : 1,
+                    gridLineColor: '#e6e6e6',
+                    minorGridLineColor: '#f2f2f2',
+                    minorTickLength: 0
+                }, {
+                    title: { 
+                        text: 'I',
+                        align: 'middle',
+                        rotation: 0,
+                        offset: 0,
+                        y: -15,
+                        x: -35
+                    },
+                    top: '42%',
+                    height: '40%',
+                    labels: {
+                        align: 'right',
+                        x: -8,
+                        y: 3,
+                        style: {
+                            color: '#666'
+                        }
+                    },
+                    offset: 0,
+                    maxPadding: 0.05,
+                    lineWidth: isMobileDevice() ? 0 : 1,
+                    gridLineWidth: isMobileDevice() ? 0.5 : 1,
+                    gridLineColor: '#e6e6e6',
+                    minorGridLineColor: '#f2f2f2',
+                    minorTickLength: 0
+                }, {
+                    title: { 
+                        text: 'P',
+                        align: 'middle',
+                        rotation: 0,
+                        offset: 0,
+                        y: -15,
+                        x: -35
+                    },
+                    top: '85%',
+                    height: '15%',
+                    labels: {
+                        align: 'right',
+                        x: -8,
+                        y: 3,
+                        style: {
+                            color: '#666'
+                        }
+                    },
+                    offset: 0,
+                    maxPadding: 0.05,
+                    lineWidth: isMobileDevice() ? 0 : 1,
+                    gridLineWidth: isMobileDevice() ? 0.5 : 1,
+                    gridLineColor: '#e6e6e6',
+                    minorGridLineColor: '#f2f2f2',
+                    minorTickLength: 0
+                }],
+
+                tooltip: {
+                    split: true,
+                    valueDecimals: 1,
+                    style: {
+                        fontSize: '12px'
+                    },
+                    headerFormat: '<span style="font-size: 12px">{point.key}</span><br/>'
+                },
+
+                plotOptions: {
+                    series: {
+                        boostThreshold: 1,
+                        events: {
+                            legendItemClick: function() {
+                                this.visible ? this.hide() : this.show();
+                                return false;
+                            }
+                        }
+                    },
+                    spline: { 
+                        dataGrouping: { enabled: true } 
+                    }
+                },
+
+                boost: {
+                    useGPUTranslations: true,
+                    seriesThreshold: 1
+                },
+
+                series: [{
+                    type: 'spline',
+                    name: 'U1',
+                    data: voltage1
+                }, {
+                    type: 'spline',
+                    name: 'U2',
+                    data: voltage2
+                }, {
+                    type: 'spline',
+                    name: 'U3',
+                    data: voltage3
+                }, {
+                    type: 'spline',
+                    name: 'I1',
+                    data: current1,
+                    yAxis: 1
+                }, {
+                    type: 'spline',
+                    name: 'I2',
+                    data: current2,
+                    yAxis: 1
+                }, {
+                    type: 'spline',
+                    name: 'I3',
+                    data: current3,
+                    yAxis: 1
+                }, {
+                    type: 'spline',
+                    name: 'P',
+                    data: P,
+                    yAxis: 2
+                }]
+            });
+
+            var originalSetExtremes = chart.xAxis[0].setExtremes;
+            chart.xAxis[0].setExtremes = function (min, max, redraw, animation) {
+                var range = max - min;
+                var units;
+                if (range >= 30 * 24 * 3600 * 1000) { // Для месяца и более
+                    units = [['hour', [3]]];
+                } else if (range > 24 * 3600 * 1000) {
+                    units = [['hour', [1]]];
+                } else if (range >= 6 * 3600 * 1000) {
+                    units = [['minute', [5]]];
+                } else {
+                    units = null;
+                }
+                chart.series.forEach(function (series) {
+                    series.update({ dataGrouping: { units: units } }, false);
+                });
+                originalSetExtremes.call(this, min, max, redraw, animation);
+                
+                // Обновление статистики при изменении диапазона
+                updateStats(chart.allRawData, min, max);
+            };
+            
+            // Инициализация статистики при первой загрузке
+            var initialExtremes = chart.xAxis[0].getExtremes();
+            chart.allRawData = data; // Сохраняем исходные данные
+            updateStats(data, initialExtremes.min, initialExtremes.max);
+            chart.isInitialLoad = true; // Флаг для определения начальной загрузки
+
+            // Обработчик для экспорта в Excel
+            $('#exportCSV').click(function () {
+                var extremes = chart.xAxis[0].getExtremes();
+                var hasEnergy = chart.allRawData.length > 0 && chart.allRawData[0].length > 8;
+                
+                // Данные для экспорта
+                var headers = ['Date', 'I1', 'I2', 'I3', 'U1', 'U2', 'U3', 'P'];
+                if (hasEnergy) {
+                    headers.push('E_Total', 'E_T1', 'E_T2', 'E_T3');
+                }
+                var data = [headers];
+
+                chart.allRawData.forEach(function(row) {
+                    if (row[0] * 1000 >= extremes.min && row[0] * 1000 <= extremes.max) {
+                        // Timestamp в БД хранится как местное время без смещения,
+                        // поэтому используем UTC-методы чтобы получить то же время что на графике
+                        var d = new Date(row[0] * 1000);
+                        var dateStr = d.getUTCFullYear() + '-'
+                            + ('0' + (d.getUTCMonth() + 1)).slice(-2) + '-'
+                            + ('0' + d.getUTCDate()).slice(-2) + ' '
+                            + ('0' + d.getUTCHours()).slice(-2) + ':'
+                            + ('0' + d.getUTCMinutes()).slice(-2) + ':'
+                            + ('0' + d.getUTCSeconds()).slice(-2);
+                        var rowData = [
+                            dateStr,
+                            Math.round(row[4]), // I1
+                            Math.round(row[5]), // I2
+                            Math.round(row[6]), // I3
+                            Math.round(row[1]), // U1
+                            Math.round(row[2]), // U2
+                            Math.round(row[3]), // U3
+                            Math.round(row[7])  // P
+                        ];
+                        if (hasEnergy) {
+                            rowData.push(
+                                row[8] !== null ? Number(row[8]) : '',
+                                row[9] !== null ? Number(row[9]) : '',
+                                row[10] !== null ? Number(row[10]) : '',
+                                row[11] !== null ? Number(row[11]) : ''
+                            );
+                        }
+                        data.push(rowData);
+                    }
+                });
+
+                // Создание листа
+                var ws = XLSX.utils.aoa_to_sheet(data);
+
+                // Установка ширины столбцов (в символах)
+                var colWidths = [
+                    { wch: 20 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, 
+                    { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 }
+                ];
+                if (hasEnergy) {
+                    colWidths.push({ wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 });
+                }
+                ws['!cols'] = colWidths;
+                
+                // Создание книги
+                var wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Данные');
+
+                // Генерация файла
+                var filename = 'monitoring_' + Highcharts.dateFormat('%Y%m%d', extremes.min) + '-' + Highcharts.dateFormat('%Y%m%d', extremes.max) + '.xlsx';
+                XLSX.writeFile(wb, filename);
+            });
+
+            // Обработчик для экспорта в CSV
+            $('#exportToCSV').click(function () {
+                var extremes = chart.xAxis[0].getExtremes();
+                var hasEnergy = chart.allRawData.length > 0 && chart.allRawData[0].length > 8;
+                // Не используем кириллицу в заголовках
+                var csvContent = hasEnergy 
+                    ? "Date;I1;I2;I3;U1;U2;U3;P;E_Total;E_T1;E_T2;E_T3\n"
+                    : "Date;I1;I2;I3;U1;U2;U3;P\n";
+                
+                chart.allRawData.forEach(function(row) {
+                    if (row[0] * 1000 >= extremes.min && row[0] * 1000 <= extremes.max) {
+                        // Timestamp в БД хранится как местное время без смещения,
+                        // поэтому используем UTC-методы чтобы получить то же время что на графике
+                        var d = new Date(row[0] * 1000);
+                        var date = d.getUTCFullYear() + '-'
+                            + ('0' + (d.getUTCMonth() + 1)).slice(-2) + '-'
+                            + ('0' + d.getUTCDate()).slice(-2) + ' '
+                            + ('0' + d.getUTCHours()).slice(-2) + ':'
+                            + ('0' + d.getUTCMinutes()).slice(-2) + ':'
+                            + ('0' + d.getUTCSeconds()).slice(-2);
+                        // Добавляем строку данных в CSV
+                        csvContent += date + ";" +
+                            Math.round(row[4]) + ";" +  // I1
+                            Math.round(row[5]) + ";" +  // I2
+                            Math.round(row[6]) + ";" +  // I3
+                            Math.round(row[1]) + ";" +  // U1
+                            Math.round(row[2]) + ";" +  // U2
+                            Math.round(row[3]) + ";" +  // U3
+                            Math.round(row[7]);         // P
+                        if (hasEnergy) {
+                            csvContent += ";" + (row[8] !== null ? row[8] : "") + ";" +
+                                                (row[9] !== null ? row[9] : "") + ";" +
+                                                (row[10] !== null ? row[10] : "") + ";" +
+                                                (row[11] !== null ? row[11] : "");
+                        }
+                        csvContent += "\n";
+                    }
+                });
+                
+                // Создаем Blob с данными CSV с BOM для корректной кодировки
+                var blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+                var link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'monitoring_' + Highcharts.dateFormat('%Y%m%d', extremes.min) + '-' + Highcharts.dateFormat('%Y%m%d', extremes.max) + '.csv';
+                link.click();
+                
+                // Очищаем URL
+                setTimeout(function() {
+                    URL.revokeObjectURL(link.href);
+                }, 100);
+            });
+
+            // Функция для определения мобильного устройства
+            function isMobileDevice() {
+                return window.innerWidth <= 768;
+            }
+
+            // Обработка изменения размера окна
+            window.addEventListener('resize', function() {
+                if (chart) {
+                    var isMobile = isMobileDevice();
+                    chart.update({
+                        chart: {
+                            marginLeft: isMobile ? 25 : 50
+                        },
+                        yAxis: [{
+                            lineWidth: isMobile ? 0 : 1,
+                            gridLineWidth: isMobile ? 0.5 : 1
+                        }, {
+                            lineWidth: isMobile ? 0 : 1,
+                            gridLineWidth: isMobile ? 0.5 : 1
+                        }, {
+                            lineWidth: isMobile ? 0 : 1,
+                            gridLineWidth: isMobile ? 0.5 : 1
+                        }]
+                    });
+                }
+            });
+        }).fail(function() {
+            console.error('Ошибка загрузки данных');
+            alert('Ошибка подключения к серверу данных');
+        });
+    </script>
+</body>
+</html>

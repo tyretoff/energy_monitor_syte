@@ -111,6 +111,9 @@ sudo mysql ${DB_NAME} -e "ALTER TABLE t_power3 ADD COLUMN energy_t2 decimal(10,2
 sudo mysql ${DB_NAME} -e "ALTER TABLE t_power3 ADD COLUMN energy_t3 decimal(10,2) DEFAULT NULL;" 2>/dev/null || true
 echo "ℹ️ Проверка структуры t_power3 завершена"
 
+echo "=== Проверяем и создаём таблицу для логгера SDM01 ==="
+sudo mysql ${DB_NAME} -e "CREATE TABLE IF NOT EXISTS t_power_sdm LIKE t_power3;" 2>/dev/null || true
+
 echo "=== Проверяем и настраиваем Apache (HTTP) ==="
 VHOST_FILE="/etc/apache2/sites-available/power_site.conf"
 SERVER_IP=$(hostname -I | awk '{print $1}')
@@ -168,7 +171,8 @@ echo ""
 echo "════════════════════════════════════════════════════════════"
 echo "✅ Всё готово!"
 echo "════════════════════════════════════════════════════════════"
-echo "🌐 Сайт:             http://${SERVER_IP}/"
+echo "🌐 Сайт (Меркурий):  http://${SERVER_IP}/"
+echo "🌐 Сайт (SDM01):      http://${SERVER_IP}/sdm/"
 echo "🛠  phpMyAdmin:       http://${SERVER_IP}/phpmyadmin/"
 echo "📂 Код сайта:        $SITE_DIR"
 echo "💾 Конфигурация БД:  CFG/config.php"

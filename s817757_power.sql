@@ -45,6 +45,8 @@ CREATE TABLE `t_power3` (
   `energy_t3` decimal(10,2) DEFAULT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
+CREATE TABLE IF NOT EXISTS `t_power_sdm` LIKE `t_power3`;
+
 --
 -- Дамп данных таблицы `t_power3`
 --
