@@ -50,6 +50,40 @@ else
     echo "⚠️ MySQL timezone уже настроен"
 fi
 
+echo "=== Настраиваем SWAP (файл подкачки) для стабильности ==="
+CURRENT_SWAP=$(free -m | awk '/Swap:/ {print $2}')
+if [ -z "$CURRENT_SWAP" ] || [ "$CURRENT_SWAP" -lt 512 ]; then
+    echo "⚠️ SWAP отсутствует или мал (${CURRENT_SWAP:-0} MB). Создаем /swapfile 2GB..."
+    sudo fallocate -l 2G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
+    sudo chmod 600 /swapfile
+    sudo mkswap /swapfile 2>/dev/null || true
+    sudo swapon /swapfile 2>/dev/null || true
+    if ! grep -q '/swapfile' /etc/fstab; then
+        echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab > /dev/null
+    fi
+    echo "✅ SWAP 2GB успешно подключен"
+else
+    echo "✅ SWAP уже активен: ${CURRENT_SWAP} MB"
+fi
+
+echo "=== Оптимизируем потребление памяти MySQL (Low-Memory profile) ==="
+MYSQL_LOW_MEM="/etc/mysql/conf.d/low-memory.cnf"
+sudo bash -c "cat > $MYSQL_LOW_MEM" <<'EOL'
+[mysqld]
+# Отключаем Performance Schema (экономит ~250-400 МБ RAM)
+performance_schema = 0
+
+# Уменьшаем буферы InnoDB для экономии оперативной памяти на VPS
+innodb_buffer_pool_size = 64M
+innodb_log_buffer_size = 8M
+
+# Лимит соединений и кэша
+max_connections = 30
+key_buffer_size = 16M
+table_open_cache = 400
+EOL
+echo "✅ Конфигурация MySQL оптимизирована для серверов с малым объемом RAM"
+
 echo "=== Подтягиваем код сайта с GitHub ==="
 if [ -d "$SITE_DIR/.git" ]; then
     cd $SITE_DIR && git pull

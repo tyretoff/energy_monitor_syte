@@ -1,6 +1,6 @@
 <?php
 date_default_timezone_set('UTC');
-ini_set('memory_limit', '512M');
+ini_set('memory_limit', '128M');
 
 // Параметры подключения к базе данных
 //$servername = "localhost";
