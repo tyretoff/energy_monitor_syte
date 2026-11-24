@@ -263,7 +263,7 @@
             }
             
             #latestData {
-                grid-template-columns: repeat(3, 1fr);
+                grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
                 padding: 10px;
                 gap: 5px;
             }
@@ -377,53 +377,53 @@
     </div>
 
     <div id="latestData">
-        <div class="data-item time-item">
+        <div class="data-item time-item" id="cardTime">
             <div class="data-label">Последние показания контроллера</div>
             <div class="data-value" id="latestTime">-</div>
         </div>
-        <div class="data-item">
+        <div class="data-item" id="cardU1">
             <div class="data-label">Напряжение U1</div>
             <div class="data-value" id="latestVoltage1">-</div>
             <div class="stats-inline">
                 <span class="max-value" id="maxVoltage1">-</span>/<span class="min-value" id="minVoltage1">-</span>
             </div>
         </div>
-        <div class="data-item">
+        <div class="data-item" id="cardU2" style="display: none;">
             <div class="data-label">Напряжение U2</div>
             <div class="data-value" id="latestVoltage2">-</div>
             <div class="stats-inline">
                 <span class="max-value" id="maxVoltage2">-</span>/<span class="min-value" id="minVoltage2">-</span>
             </div>
         </div>
-        <div class="data-item">
+        <div class="data-item" id="cardU3" style="display: none;">
             <div class="data-label">Напряжение U3</div>
             <div class="data-value" id="latestVoltage3">-</div>
             <div class="stats-inline">
                 <span class="max-value" id="maxVoltage3">-</span>/<span class="min-value" id="minVoltage3">-</span>
             </div>
         </div>
-        <div class="data-item">
+        <div class="data-item" id="cardI1">
             <div class="data-label">Ток I1</div>
             <div class="data-value" id="latestCurrent1">-</div>
             <div class="stats-inline">
                 <span class="max-value" id="maxCurrent1">-</span>/<span class="min-value" id="minCurrent1">-</span>
             </div>
         </div>
-        <div class="data-item">
+        <div class="data-item" id="cardI2" style="display: none;">
             <div class="data-label">Ток I2</div>
             <div class="data-value" id="latestCurrent2">-</div>
             <div class="stats-inline">
                 <span class="max-value" id="maxCurrent2">-</span>/<span class="min-value" id="minCurrent2">-</span>
             </div>
         </div>
-        <div class="data-item">
+        <div class="data-item" id="cardI3" style="display: none;">
             <div class="data-label">Ток I3</div>
             <div class="data-value" id="latestCurrent3">-</div>
             <div class="stats-inline">
                 <span class="max-value" id="maxCurrent3">-</span>/<span class="min-value" id="minCurrent3">-</span>
             </div>
         </div>
-        <div class="data-item power-item">
+        <div class="data-item power-item" id="cardP">
             <div class="data-label">Мощность P</div>
             <div class="data-value" id="latestPower">-</div>
             <div class="stats-inline">
@@ -504,6 +504,33 @@
                 enabled: false
             }
         });
+
+        // Синхронизация видимости карточек сверху с видимостью серий на графике
+        function syncCardVisibility(seriesName, isVisible) {
+            var cardMap = {
+                'U1': 'cardU1',
+                'U2': 'cardU2',
+                'U3': 'cardU3',
+                'I1': 'cardI1',
+                'I2': 'cardI2',
+                'I3': 'cardI3',
+                'P': 'cardP'
+            };
+            var cardId = cardMap[seriesName];
+            if (cardId) {
+                var el = document.getElementById(cardId);
+                if (el) {
+                    el.style.display = isVisible ? '' : 'none';
+                }
+            }
+        }
+
+        function syncAllCards(chart) {
+            if (!chart || !chart.series) return;
+            chart.series.forEach(function(s) {
+                syncCardVisibility(s.name, s.visible);
+            });
+        }
 
         // Функция для обновления статистики
         function updateStats(data, min, max) {
@@ -1093,7 +1120,12 @@
                         boostThreshold: 1,
                         events: {
                             legendItemClick: function() {
-                                this.visible ? this.hide() : this.show();
+                                if (this.visible) {
+                                    this.hide();
+                                } else {
+                                    this.show();
+                                }
+                                syncCardVisibility(this.name, this.visible);
                                 return false;
                             }
                         }
@@ -1173,6 +1205,7 @@
             var initialExtremes = chart.xAxis[0].getExtremes();
             chart.allRawData = data; // Сохраняем исходные данные
             updateStats(data, initialExtremes.min, initialExtremes.max);
+            syncAllCards(chart);
             chart.isInitialLoad = true; // Флаг для определения начальной загрузки
 
             // Обработчик для экспорта в Excel
