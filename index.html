@@ -629,17 +629,28 @@
 
             // ==================== Расчет энергии и тарифов (Московская область) ====================
             // Отображение выбранного периода
+            var dFrom = new Date(min);
+            var dTo = new Date(max);
+            var fmt = function(d) {
+                return ('0' + d.getUTCDate()).slice(-2) + '.' + 
+                       ('0' + (d.getUTCMonth() + 1)).slice(-2) + '.' + 
+                       d.getUTCFullYear() + ' ' + 
+                       ('0' + d.getUTCHours()).slice(-2) + ':' + 
+                       ('0' + d.getUTCMinutes()).slice(-2);
+            };
+            var periodText = 'Период: ' + fmt(dFrom) + ' — ' + fmt(dTo);
+
             if (document.getElementById('tariffPeriodLabel')) {
-                var dFrom = new Date(min);
-                var dTo = new Date(max);
-                var fmt = function(d) {
-                    return ('0' + d.getUTCDate()).slice(-2) + '.' + 
-                           ('0' + (d.getUTCMonth() + 1)).slice(-2) + '.' + 
-                           d.getUTCFullYear() + ' ' + 
-                           ('0' + d.getUTCHours()).slice(-2) + ':' + 
-                           ('0' + d.getUTCMinutes()).slice(-2);
-                };
-                document.getElementById('tariffPeriodLabel').textContent = 'Период: ' + fmt(dFrom) + ' — ' + fmt(dTo);
+                document.getElementById('tariffPeriodLabel').textContent = periodText;
+            }
+
+            if (window.powerChart && window.powerChart.legend && window.powerChart._lastPeriodText !== periodText) {
+                window.powerChart._lastPeriodText = periodText;
+                window.powerChart.legend.update({
+                    title: {
+                        text: periodText
+                    }
+                });
             }
 
             var firstPt = filteredData[0];
@@ -1072,6 +1083,14 @@
                     layout: 'horizontal',
                     align: 'center',
                     verticalAlign: 'bottom',
+                    title: {
+                        text: 'Период: -',
+                        style: {
+                            color: '#555555',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                        }
+                    },
                     itemStyle: {
                         color: '#333',
                         fontSize: '15.6px'
@@ -1228,6 +1247,7 @@
                     yAxis: 2
                 }]
             });
+            window.powerChart = chart;
 
             var originalSetExtremes = chart.xAxis[0].setExtremes;
             chart.xAxis[0].setExtremes = function (min, max, redraw, animation) {
