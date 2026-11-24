@@ -101,16 +101,17 @@
             color: white;
             border: none;
             border-radius: 6px;
-            padding: 7px 13px;
-            font-size: 13px;
+            padding: 4px 10px;
+            font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
+            gap: 5px;
+            box-shadow: 0 1px 3px rgba(52, 152, 219, 0.3);
             transition: all 0.2s ease;
             user-select: none;
+            vertical-align: middle;
         }
         .refresh-btn:hover {
             background: #2980b9;
@@ -416,11 +417,9 @@
 
     <div id="latestData">
         <div class="data-item time-item" id="cardTime">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                <div>
-                    <div class="data-label">Последние показания контроллера</div>
-                    <div class="data-value" id="latestTime">-</div>
-                </div>
+            <div class="data-label">Последние показания контроллера</div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                <span class="data-value" id="latestTime">-</span>
                 <button id="btnRefresh" class="refresh-btn" title="Принудительно обновить данные">
                     <span class="refresh-icon">🔄</span> <span class="refresh-text">Обновить</span>
                 </button>
