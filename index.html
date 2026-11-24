@@ -1196,13 +1196,13 @@
                             + ('0' + d.getUTCSeconds()).slice(-2);
                         var rowData = [
                             dateStr,
-                            Math.round(row[4]), // I1
-                            Math.round(row[5]), // I2
-                            Math.round(row[6]), // I3
-                            Math.round(row[1]), // U1
-                            Math.round(row[2]), // U2
-                            Math.round(row[3]), // U3
-                            Math.round(row[7])  // P
+                            row[4] !== null ? Number(row[4].toFixed(2)) : '', // I1
+                            row[5] !== null ? Number(row[5].toFixed(2)) : '', // I2
+                            row[6] !== null ? Number(row[6].toFixed(2)) : '', // I3
+                            row[1] !== null ? Number(row[1].toFixed(1)) : '', // U1
+                            row[2] !== null ? Number(row[2].toFixed(1)) : '', // U2
+                            row[3] !== null ? Number(row[3].toFixed(1)) : '', // U3
+                            row[7] !== null ? Number(row[7].toFixed(2)) : ''  // P
                         ];
                         if (hasEnergy) {
                             rowData.push(
@@ -1260,13 +1260,13 @@
                             + ('0' + d.getUTCSeconds()).slice(-2);
                         // Добавляем строку данных в CSV
                         csvContent += date + ";" +
-                            Math.round(row[4]) + ";" +  // I1
-                            Math.round(row[5]) + ";" +  // I2
-                            Math.round(row[6]) + ";" +  // I3
-                            Math.round(row[1]) + ";" +  // U1
-                            Math.round(row[2]) + ";" +  // U2
-                            Math.round(row[3]) + ";" +  // U3
-                            Math.round(row[7]);         // P
+                            (row[4] !== null ? Number(row[4].toFixed(2)) : "") + ";" +  // I1
+                            (row[5] !== null ? Number(row[5].toFixed(2)) : "") + ";" +  // I2
+                            (row[6] !== null ? Number(row[6].toFixed(2)) : "") + ";" +  // I3
+                            (row[1] !== null ? Number(row[1].toFixed(1)) : "") + ";" +  // U1
+                            (row[2] !== null ? Number(row[2].toFixed(1)) : "") + ";" +  // U2
+                            (row[3] !== null ? Number(row[3].toFixed(1)) : "") + ";" +  // U3
+                            (row[7] !== null ? Number(row[7].toFixed(2)) : "");         // P
                         if (hasEnergy) {
                             csvContent += ";" + (row[8] !== null ? row[8] : "") + ";" +
                                                 (row[9] !== null ? row[9] : "") + ";" +

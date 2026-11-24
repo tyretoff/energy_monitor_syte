@@ -29,12 +29,12 @@ USE s817757_power;
 
 CREATE TABLE `t_power3` (
   `datetime` datetime NOT NULL,
-  `voltage1` decimal(3,0) NOT NULL,
-  `voltage2` decimal(3,0) NOT NULL,
-  `voltage3` decimal(3,0) NOT NULL,
-  `current1` decimal(3,0) NOT NULL,
-  `current2` decimal(3,0) NOT NULL,
-  `current3` decimal(3,0) NOT NULL,
+  `voltage1` decimal(5,2) NOT NULL,
+  `voltage2` decimal(5,2) NOT NULL,
+  `voltage3` decimal(5,2) NOT NULL,
+  `current1` decimal(6,2) NOT NULL,
+  `current2` decimal(6,2) NOT NULL,
+  `current3` decimal(6,2) NOT NULL,
   `P` decimal(6,2) NOT NULL,
   `cos1` decimal(3,2) NOT NULL,
   `cos2` decimal(3,2) NOT NULL,

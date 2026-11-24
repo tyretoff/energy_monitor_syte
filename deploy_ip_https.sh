@@ -142,15 +142,21 @@ else
     fi
 fi
 
-echo "=== Проверяем и обновляем структуру таблицы (миграция колонок энергии) ==="
+echo "=== Проверяем и создаём таблицу для логгера SDM01 ==="
+sudo mysql ${DB_NAME} -e "CREATE TABLE IF NOT EXISTS t_power_sdm LIKE t_power3;" 2>/dev/null || true
+
+echo "=== Проверяем и обновляем структуру таблиц (поддержка дробных U/I и колонок энергии) ==="
+sudo mysql ${DB_NAME} -e "ALTER TABLE t_power3 MODIFY voltage1 DECIMAL(5,2) NOT NULL, MODIFY voltage2 DECIMAL(5,2) NOT NULL, MODIFY voltage3 DECIMAL(5,2) NOT NULL, MODIFY current1 DECIMAL(6,2) NOT NULL, MODIFY current2 DECIMAL(6,2) NOT NULL, MODIFY current3 DECIMAL(6,2) NOT NULL;" 2>/dev/null || true
+sudo mysql ${DB_NAME} -e "ALTER TABLE t_power_sdm MODIFY voltage1 DECIMAL(5,2) NOT NULL, MODIFY voltage2 DECIMAL(5,2) NOT NULL, MODIFY voltage3 DECIMAL(5,2) NOT NULL, MODIFY current1 DECIMAL(6,2) NOT NULL, MODIFY current2 DECIMAL(6,2) NOT NULL, MODIFY current3 DECIMAL(6,2) NOT NULL;" 2>/dev/null || true
 sudo mysql ${DB_NAME} -e "ALTER TABLE t_power3 ADD COLUMN energy decimal(10,2) DEFAULT NULL;" 2>/dev/null || true
 sudo mysql ${DB_NAME} -e "ALTER TABLE t_power3 ADD COLUMN energy_t1 decimal(10,2) DEFAULT NULL;" 2>/dev/null || true
 sudo mysql ${DB_NAME} -e "ALTER TABLE t_power3 ADD COLUMN energy_t2 decimal(10,2) DEFAULT NULL;" 2>/dev/null || true
 sudo mysql ${DB_NAME} -e "ALTER TABLE t_power3 ADD COLUMN energy_t3 decimal(10,2) DEFAULT NULL;" 2>/dev/null || true
-echo "ℹ️ Проверка структуры t_power3 завершена"
-
-echo "=== Проверяем и создаём таблицу для логгера SDM01 ==="
-sudo mysql ${DB_NAME} -e "CREATE TABLE IF NOT EXISTS t_power_sdm LIKE t_power3;" 2>/dev/null || true
+sudo mysql ${DB_NAME} -e "ALTER TABLE t_power_sdm ADD COLUMN energy decimal(10,2) DEFAULT NULL;" 2>/dev/null || true
+sudo mysql ${DB_NAME} -e "ALTER TABLE t_power_sdm ADD COLUMN energy_t1 decimal(10,2) DEFAULT NULL;" 2>/dev/null || true
+sudo mysql ${DB_NAME} -e "ALTER TABLE t_power_sdm ADD COLUMN energy_t2 decimal(10,2) DEFAULT NULL;" 2>/dev/null || true
+sudo mysql ${DB_NAME} -e "ALTER TABLE t_power_sdm ADD COLUMN energy_t3 decimal(10,2) DEFAULT NULL;" 2>/dev/null || true
+echo "ℹ️ Проверка структуры таблиц завершена"
 
 echo "=== Проверяем и настраиваем Apache (HTTP) ==="
 VHOST_FILE="/etc/apache2/sites-available/power_site.conf"
