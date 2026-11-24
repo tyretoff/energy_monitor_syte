@@ -1,20 +1,23 @@
 {
-    "name": "MercuryLogger",
-    "short_name": "App",
-    "start_url": "/merc1/index.html",
+    "name": "Мониторинг Меркурий 236",
+    "short_name": "Меркурий",
+    "start_url": "/",
+    "scope": "/",
     "display": "standalone",
     "background_color": "#ffffff",
-    "theme_color": "#000000",
+    "theme_color": "#2196f3",
     "icons": [
         {
-            "src": "/merc1/icon-192x192.png",
+            "src": "/icon-192x192.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any maskable"
         },
         {
-            "src": "/merc1/icon-512x512.png",
+            "src": "/icon-512x512.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any maskable"
         }
     ]
 }

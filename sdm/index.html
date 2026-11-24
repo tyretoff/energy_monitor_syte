@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <link rel="icon" href="/icon-192x192.png">
     <meta name="theme-color" content="#2196f3">
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="/icon-192x192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="SDM01">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="Content-Language" content="ru">
@@ -90,6 +94,40 @@
         .time-item .data-value {
             font-size: 16px;
             color: #2c3e50;
+        }
+
+        .refresh-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 7px 13px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .refresh-btn:hover {
+            background: #2980b9;
+            box-shadow: 0 3px 6px rgba(41, 128, 185, 0.4);
+            transform: translateY(-1px);
+        }
+        .refresh-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+        .refresh-btn.loading .refresh-icon {
+            display: inline-block;
+            animation: spinRefresh 0.8s linear infinite;
+        }
+        @keyframes spinRefresh {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         .data-label {
@@ -378,8 +416,15 @@
 
     <div id="latestData">
         <div class="data-item time-item" id="cardTime">
-            <div class="data-label">Последние показания контроллера</div>
-            <div class="data-value" id="latestTime">-</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <div>
+                    <div class="data-label">Последние показания контроллера</div>
+                    <div class="data-value" id="latestTime">-</div>
+                </div>
+                <button id="btnRefresh" class="refresh-btn" title="Принудительно обновить данные">
+                    <span class="refresh-icon">🔄</span> <span class="refresh-text">Обновить</span>
+                </button>
+            </div>
         </div>
         <div class="data-item" id="cardU1">
             <div class="data-label">Напряжение U1</div>
@@ -737,7 +782,7 @@
             updateLatestData(data);
 
             // Функция для обновления всех данных
-            function updateAllData() {
+            function updateAllData(onComplete) {
                 $.getJSON('jsonp.php', function(response) {
                     // Обработка нового формата ответа
                     var newData;
@@ -786,6 +831,8 @@
                     updateStats(newData, extremes.min, extremes.max);
                 }).fail(function() {
                     console.error('Ошибка обновления данных');
+                }).always(function() {
+                    if (typeof onComplete === 'function') onComplete();
                 });
             }
 
@@ -801,6 +848,27 @@
 
             // Запускаем таймер автообновления
             resetUpdateTimer();
+
+            // Кнопка принудительного обновления
+            $('#btnRefresh').click(function () {
+                var $btn = $(this);
+                if ($btn.hasClass('loading')) return;
+                $btn.addClass('loading');
+                $btn.find('.refresh-text').text('Загрузка...');
+
+                updateAllData(function () {
+                    $btn.removeClass('loading');
+                    $btn.find('.refresh-text').text('Обновлено ✓');
+                    setTimeout(function () {
+                        $btn.find('.refresh-text').text('Обновить');
+                    }, 1500);
+                });
+                resetUpdateTimer();
+            });
+
+            $('#btnRefresh').on('dblclick', function () {
+                location.reload(true);
+            });
 
             // --- Вспомогательные функции для загрузки данных в диаграмму ---
             function updateChartWithData(chart, response, startMillis, endMillis) {
