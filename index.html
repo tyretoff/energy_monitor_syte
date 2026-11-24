@@ -548,22 +548,22 @@
             });
             
             // Обновление элементов интерфейса
-            document.getElementById('minVoltage1').textContent = stats.voltage1.min.toFixed(1);
-            document.getElementById('maxVoltage1').textContent = stats.voltage1.max.toFixed(1);
-            document.getElementById('minVoltage2').textContent = stats.voltage2.min.toFixed(1);
-            document.getElementById('maxVoltage2').textContent = stats.voltage2.max.toFixed(1);
-            document.getElementById('minVoltage3').textContent = stats.voltage3.min.toFixed(1);
-            document.getElementById('maxVoltage3').textContent = stats.voltage3.max.toFixed(1);
+            document.getElementById('minVoltage1').textContent = stats.voltage1.min.toFixed(2);
+            document.getElementById('maxVoltage1').textContent = stats.voltage1.max.toFixed(2);
+            document.getElementById('minVoltage2').textContent = stats.voltage2.min.toFixed(2);
+            document.getElementById('maxVoltage2').textContent = stats.voltage2.max.toFixed(2);
+            document.getElementById('minVoltage3').textContent = stats.voltage3.min.toFixed(2);
+            document.getElementById('maxVoltage3').textContent = stats.voltage3.max.toFixed(2);
             
-            document.getElementById('minCurrent1').textContent = stats.current1.min.toFixed(1);
-            document.getElementById('maxCurrent1').textContent = stats.current1.max.toFixed(1);
-            document.getElementById('minCurrent2').textContent = stats.current2.min.toFixed(1);
-            document.getElementById('maxCurrent2').textContent = stats.current2.max.toFixed(1);
-            document.getElementById('minCurrent3').textContent = stats.current3.min.toFixed(1);
-            document.getElementById('maxCurrent3').textContent = stats.current3.max.toFixed(1);
+            document.getElementById('minCurrent1').textContent = stats.current1.min.toFixed(2);
+            document.getElementById('maxCurrent1').textContent = stats.current1.max.toFixed(2);
+            document.getElementById('minCurrent2').textContent = stats.current2.min.toFixed(2);
+            document.getElementById('maxCurrent2').textContent = stats.current2.max.toFixed(2);
+            document.getElementById('minCurrent3').textContent = stats.current3.min.toFixed(2);
+            document.getElementById('maxCurrent3').textContent = stats.current3.max.toFixed(2);
             
-            document.getElementById('minPower').textContent = stats.power.min.toFixed(1);
-            document.getElementById('maxPower').textContent = stats.power.max.toFixed(1);
+            document.getElementById('minPower').textContent = stats.power.min.toFixed(2);
+            document.getElementById('maxPower').textContent = stats.power.max.toFixed(2);
 
             // ==================== Расчет энергии и тарифов (Московская область) ====================
             // Отображение выбранного периода
@@ -697,13 +697,13 @@
                 var latestIndex = data.length - 1;
                 document.getElementById('latestTime').textContent = 
                     Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', data[latestIndex][0] * 1000);
-                document.getElementById('latestVoltage1').textContent = data[latestIndex][1].toFixed(1);
-                document.getElementById('latestVoltage2').textContent = data[latestIndex][2].toFixed(1);
-                document.getElementById('latestVoltage3').textContent = data[latestIndex][3].toFixed(1);
-                document.getElementById('latestCurrent1').textContent = data[latestIndex][4].toFixed(1);
-                document.getElementById('latestCurrent2').textContent = data[latestIndex][5].toFixed(1);
-                document.getElementById('latestCurrent3').textContent = data[latestIndex][6].toFixed(1);
-                document.getElementById('latestPower').textContent = data[latestIndex][7].toFixed(1);
+                document.getElementById('latestVoltage1').textContent = data[latestIndex][1].toFixed(2);
+                document.getElementById('latestVoltage2').textContent = data[latestIndex][2].toFixed(2);
+                document.getElementById('latestVoltage3').textContent = data[latestIndex][3].toFixed(2);
+                document.getElementById('latestCurrent1').textContent = data[latestIndex][4].toFixed(2);
+                document.getElementById('latestCurrent2').textContent = data[latestIndex][5].toFixed(2);
+                document.getElementById('latestCurrent3').textContent = data[latestIndex][6].toFixed(2);
+                document.getElementById('latestPower').textContent = data[latestIndex][7].toFixed(2);
             }
 
             // Обновляем последние данные при первой загрузке
@@ -1081,7 +1081,7 @@
 
                 tooltip: {
                     split: true,
-                    valueDecimals: 1,
+                    valueDecimals: 2,
                     style: {
                         fontSize: '12px'
                     },
@@ -1199,9 +1199,9 @@
                             row[4] !== null ? Number(row[4].toFixed(2)) : '', // I1
                             row[5] !== null ? Number(row[5].toFixed(2)) : '', // I2
                             row[6] !== null ? Number(row[6].toFixed(2)) : '', // I3
-                            row[1] !== null ? Number(row[1].toFixed(1)) : '', // U1
-                            row[2] !== null ? Number(row[2].toFixed(1)) : '', // U2
-                            row[3] !== null ? Number(row[3].toFixed(1)) : '', // U3
+                            row[1] !== null ? Number(row[1].toFixed(2)) : '', // U1
+                            row[2] !== null ? Number(row[2].toFixed(2)) : '', // U2
+                            row[3] !== null ? Number(row[3].toFixed(2)) : '', // U3
                             row[7] !== null ? Number(row[7].toFixed(2)) : ''  // P
                         ];
                         if (hasEnergy) {
@@ -1263,9 +1263,9 @@
                             (row[4] !== null ? Number(row[4].toFixed(2)) : "") + ";" +  // I1
                             (row[5] !== null ? Number(row[5].toFixed(2)) : "") + ";" +  // I2
                             (row[6] !== null ? Number(row[6].toFixed(2)) : "") + ";" +  // I3
-                            (row[1] !== null ? Number(row[1].toFixed(1)) : "") + ";" +  // U1
-                            (row[2] !== null ? Number(row[2].toFixed(1)) : "") + ";" +  // U2
-                            (row[3] !== null ? Number(row[3].toFixed(1)) : "") + ";" +  // U3
+                            (row[1] !== null ? Number(row[1].toFixed(2)) : "") + ";" +  // U1
+                            (row[2] !== null ? Number(row[2].toFixed(2)) : "") + ";" +  // U2
+                            (row[3] !== null ? Number(row[3].toFixed(2)) : "") + ";" +  // U3
                             (row[7] !== null ? Number(row[7].toFixed(2)) : "");         // P
                         if (hasEnergy) {
                             csvContent += ";" + (row[8] !== null ? row[8] : "") + ";" +
