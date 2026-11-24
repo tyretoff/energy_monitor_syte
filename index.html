@@ -806,6 +806,7 @@
 
                     // Обновляем последние показания
                     updateLatestData(newData);
+                    chart.allRawData = newData; // Обновляем исходные данные для экспорта и статистики
 
                     // Обновляем графики
                     chart.series[0].setData(newData.map(item => [item[0] * 1000, item[1]]));
