@@ -716,6 +716,7 @@
             }
         }
 
+        $.ajaxSetup({ cache: false });
         $.getJSON('jsonp.php', function (response) {
             // Обработка нового формата ответа с fallback
             var data, isFallback = false, fallbackMessage = '';
@@ -819,18 +820,27 @@
                     updateLatestData(newData);
                     chart.allRawData = newData; // Обновляем исходные данные для экспорта и статистики
 
-                    // Обновляем графики
-                    chart.series[0].setData(newData.map(item => [item[0] * 1000, item[1]]));
-                    chart.series[1].setData(newData.map(item => [item[0] * 1000, item[2]]));
-                    chart.series[2].setData(newData.map(item => [item[0] * 1000, item[3]]));
-                    chart.series[3].setData(newData.map(item => [item[0] * 1000, item[4]]));
-                    chart.series[4].setData(newData.map(item => [item[0] * 1000, item[5]]));
-                    chart.series[5].setData(newData.map(item => [item[0] * 1000, item[6]]));
-                    chart.series[6].setData(newData.map(item => [item[0] * 1000, item[7]]));
-
-                    // Обновляем статистику
                     var extremes = chart.xAxis[0].getExtremes();
-                    updateStats(newData, extremes.min, extremes.max);
+                    var wasAtLatest = (extremes.dataMax && extremes.max >= extremes.dataMax - 5 * 60 * 1000);
+                    var currentSpan = extremes.max - extremes.min;
+
+                    // Обновляем графики без промежуточной перерисовки
+                    chart.series[0].setData(newData.map(item => [item[0] * 1000, item[1]]), false);
+                    chart.series[1].setData(newData.map(item => [item[0] * 1000, item[2]]), false);
+                    chart.series[2].setData(newData.map(item => [item[0] * 1000, item[3]]), false);
+                    chart.series[3].setData(newData.map(item => [item[0] * 1000, item[4]]), false);
+                    chart.series[4].setData(newData.map(item => [item[0] * 1000, item[5]]), false);
+                    chart.series[5].setData(newData.map(item => [item[0] * 1000, item[6]]), false);
+                    chart.series[6].setData(newData.map(item => [item[0] * 1000, item[7]]), false);
+
+                    // Если пользователь смотрел актуальный край графика, сдвигаем окно к последним данным
+                    if (wasAtLatest && currentSpan > 0) {
+                        var newLatestTs = newData[newData.length - 1][0] * 1000;
+                        chart.xAxis[0].setExtremes(newLatestTs - currentSpan, newLatestTs, true);
+                    } else {
+                        chart.redraw();
+                        updateStats(newData, extremes.min, extremes.max);
+                    }
                 }).fail(function() {
                     console.error('Ошибка обновления данных');
                 }).always(function() {
@@ -850,6 +860,20 @@
 
             // Запускаем таймер автообновления
             resetUpdateTimer();
+
+            // Мгновенное обновление при возврате во вкладку или развороте PWA-приложения
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'visible') {
+                    updateAllData();
+                    resetUpdateTimer();
+                }
+            });
+            window.addEventListener('pageshow', function (e) {
+                if (e.persisted) {
+                    updateAllData();
+                    resetUpdateTimer();
+                }
+            });
 
             // Кнопка принудительного обновления
             $('#btnRefresh').click(function () {

@@ -1,6 +1,10 @@
 <?php
 date_default_timezone_set('UTC');
 ini_set('memory_limit', '128M');
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
 
 // Параметры подключения к базе данных
 //$servername = "localhost";
