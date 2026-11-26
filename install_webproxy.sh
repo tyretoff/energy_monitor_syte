@@ -36,8 +36,15 @@ fi
 echo "🔑 Секрет сгенерирован (будет выведен в конце установки)"
 
 echo "=== 2. Установка зависимостей и скачивание tproxy-server ==="
-apt-get update -qq
-apt-get install -y -qq git curl openssl
+MISSING_PKGS=()
+for cmd in git curl openssl; do
+    command -v "$cmd" >/dev/null 2>&1 || MISSING_PKGS+=("$cmd")
+done
+
+if [ ${#MISSING_PKGS[@]} -gt 0 ]; then
+    apt-get update -qq || (rm -rf /var/lib/apt/lists/* && apt-get update -o Acquire::CompressionTypes::Order::=gz -qq)
+    apt-get install -y -qq "${MISSING_PKGS[@]}"
+fi
 
 if [ -d "${TPROXY_SRC}/.git" ]; then
     git -C "$TPROXY_SRC" pull --ff-only
