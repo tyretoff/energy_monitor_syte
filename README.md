@@ -105,6 +105,42 @@ EMAIL="admin@ваш-домен.ru"
 
 ---
 
+## 🌐 Вариант 3: Установка с HTTPS + Telegram WEB-proxy
+
+Разворачивает всё из **Варианта 2** (Apache2, MySQL, PHP, Let's Encrypt на порту 443) и дополнительно устанавливает **Telegram WEB-proxy** (`telegramdesktop/tproxy-server` + официальный `MTProxy`) на основной домен `elbs.ru`.
+
+- При открытии `https://elbs.ru/` в обычном браузере загружается ваш реальный сайт мониторинга энергии.
+- Трафик Telegram маскируется под стандартные HTTPS/WebSocket-запросы к этому же домену.
+- HTTP API по IP и `broker.php` продолжают работать на порту 80 без изменений.
+
+### Установка на чистый VPS (x86_64, Ubuntu 22.04+ / 24.04):
+
+```bash
+wget https://raw.githubusercontent.com/tyretoff/energy_monitor_syte/master/deploy_ip_https_webproxy.sh -O deploy_ip_https_webproxy.sh
+chmod +x deploy_ip_https_webproxy.sh
+./deploy_ip_https_webproxy.sh
+```
+
+### Переезд на новый VPS с сохранением прежнего секрета (чтобы не перенастраивать клиентов):
+
+```bash
+WEBPROXY_SECRET=ваш_32_hex_секрет ./deploy_ip_https_webproxy.sh
+```
+или:
+```bash
+./deploy_ip_https_webproxy.sh --secret ваш_32_hex_секрет
+```
+
+### Если сайт с HTTPS уже развёрнут ранее:
+
+```bash
+cd /var/www/power_site && git pull
+chmod +x install_webproxy.sh
+sudo ./install_webproxy.sh
+```
+
+---
+
 ## 🛠️ Что делают скрипты
 
 ### Общие действия:
